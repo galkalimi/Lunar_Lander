@@ -10,13 +10,15 @@ from gymnasium import spaces
 # Custom Lunar Lander environment with fuel management
 class LunarLanderEnvWrapper(gym.Env):
     def __init__(self):
-        self.env = gym.make('LunarLander-v2', render_mode="human")  # Base environment
+        super(LunarLanderEnvWrapper, self).__init__()
+        self.env = gym.make('LunarLander-v2')  # Base environment
         self.state = None
 
         # Fuel parameters - custom modification
-        self.fuel_limit = 1300  # Maximum fuel amount
+        self.fuel_limit = 1000  # Maximum fuel amount
         self.current_fuel = self.fuel_limit
-        self.fuel_consumption_rate = 5  # Amount of fuel consumed per thrust action
+        self.prev_fuel = self.fuel_limit
+        self.fuel_consumption_rate = 10  # Amount of fuel consumed per thrust action
 
         # Update observation space to include fuel level
         self.observation_space = spaces.Box(
@@ -34,27 +36,39 @@ class LunarLanderEnvWrapper(gym.Env):
 
     def step(self, action):
         # Check if there is enough fuel to perform a thrust action
-        if action in [1, 2, 3] and self.current_fuel >= self.fuel_consumption_rate:
-            self.current_fuel -= self.fuel_consumption_rate
-        elif action in [1, 2, 3] and self.current_fuel < self.fuel_consumption_rate:
-            # If no fuel, force 'do nothing' action (action 0)
-            action = 0
+        # if action in [1, 2, 3] and self.current_fuel >= self.fuel_consumption_rate:
+        #     self.prev_fuel = self.current_fuel
+        #     self.current_fuel -= self.fuel_consumption_rate
+        # elif action in [1, 2, 3] and self.current_fuel < self.fuel_consumption_rate:
+        #     # If no fuel, force 'do nothing' action (action 0)
+        #     action = 0
+
 
         # Perform the action in the environment
         next_state, reward, done, truncated, info = self.env.step(action)
 
-        # If fuel runs out, apply penalty but let the episode continue
-        if self.current_fuel < self.fuel_consumption_rate and action == 0:
+        if self.state[6] == 1 and self.state[7] == 1:
             done = True
-            reward -= 50  # Penalize for running out of fuel
+
+        # # Calculate fuel penalty based on the amount of fuel consumed
+        # fuel_penalty = (self.prev_fuel - self.current_fuel) * 0.01  # Adjust penalty rate as needed
+        # print(f"prev fule : {self.prev_fuel}, current fuel : {self.current_fuel}, fule_penalty: {fuel_penalty}")
+        # reward -= fuel_penalty
+
+        # Check if the episode should terminate due to fuel depletion
+        # if self.current_fuel <= 0:
+        #     done = True
+        #     reward -= 50  # Penalize for running out of fuel
+        #     info['termination_reason'] = 'out_of_fuel'  # Add reason to info
+        #     print(f"prev reward: {reward+50}, current reward: {reward}")
 
         # Append fuel level to the state
         next_state_with_fuel = np.append(next_state, self.current_fuel)
 
-        return next_state_with_fuel, reward, done, truncated, info
+        return next_state_with_fuel   , reward, done, truncated, info
 
-    def render(self):
-        self.env.render()
+    def render(self, mode='human'):
+        self.env.render(mode)
 
     def close(self):
         self.env.close()
@@ -63,14 +77,16 @@ class LunarLanderEnvWrapper(gym.Env):
 class DQN(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(DQN, self).__init__()
-        self.fc1 = nn.Linear(state_dim, 128)
-        self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, action_dim)
+        self.fc1 = nn.Linear(state_dim, 256)  # Increased number of neurons
+        self.fc2 = nn.Linear(256, 256)  # Increased number of neurons
+        self.fc3 = nn.Linear(256, 128)  # Additional layer
+        self.fc4 = nn.Linear(128, action_dim)  # Additional layer
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = torch.relu(self.fc3(x))
+        x = self.fc4(x)
         return x
 
 # Replay Buffer
@@ -89,27 +105,39 @@ class ReplayBuffer:
 
 # DQN Agent
 class DQNAgent:
-    def __init__(self, state_dim, action_dim, action_space):
+    def __init__(self, state_dim, action_dim, action_space, batch_size=64, gamma=0.99, epsilon=1.0, epsilon_min=0.01,
+                 epsilon_decay=0.995, lr=0.001, memory_capacity=10000):
+        self.state_dim = state_dim
         self.action_dim = action_dim
         self.action_space = action_space
+        self.batch_size = batch_size
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.epsilon_min = epsilon_min
+        self.epsilon_decay = epsilon_decay
+        self.lr = lr
+
+        self.memory = ReplayBuffer(memory_capacity)
         self.policy_net = DQN(state_dim, action_dim)
         self.target_net = DQN(state_dim, action_dim)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
 
-        self.optimizer = optim.Adam(self.policy_net.parameters())
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=self.lr)
         self.criterion = nn.MSELoss()
-        self.memory = ReplayBuffer(10000)
-        self.batch_size = 64
-        self.gamma = 0.99
-        self.epsilon = 0.1
 
     def select_action(self, state):
         if random.random() < self.epsilon:
-            return self.action_space.sample()  # Choose a random action
-        with torch.no_grad():
-            state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)  # Add batch dimension
-            return self.policy_net(state).argmax().item()
+            action = self.action_space.sample()  # Choose a random action
+        else:
+            with torch.no_grad():
+                state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)  # Add batch dimension
+                action = self.policy_net(state).argmax().item()
+
+        # Decay epsilon
+        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
+
+        return action
 
     def optimize_model(self):
         if len(self.memory) < self.batch_size:
@@ -154,7 +182,7 @@ class DQNAgent:
 
 
 # Training function
-def train_dqn(env, agent, num_episodes=1000, update_target_every=10, max_steps_per_episode=200):
+def train_dqn(env, agent, num_episodes=5000, update_target_every=10, max_steps_per_episode=200):
     for episode in range(num_episodes):
         state, info = env.reset()
         done = False
@@ -187,7 +215,8 @@ def train_dqn(env, agent, num_episodes=1000, update_target_every=10, max_steps_p
     env.close()
 
 
-def test_dqn(env, agent, num_episodes=10, max_steps_per_episode=200):
+def test_dqn(env, agent, num_episodes=100, max_steps_per_episode=200):
+    avg_reward = 0
     agent.epsilon = 0.0  # Disable exploration for testing
     for episode in range(num_episodes):
         state, info = env.reset()
@@ -204,21 +233,25 @@ def test_dqn(env, agent, num_episodes=10, max_steps_per_episode=200):
                 break
 
         print(f'Test Episode {episode + 1}/{num_episodes}, Total Reward: {total_reward}')
+        avg_reward += total_reward
 
+    avg_reward /= num_episodes
+    print(f'Average Test Reward: {avg_reward}')
     env.close()
 
 
 # Main function
 def main():
-    env = LunarLanderEnvWrapper()  # Using custom environment with fuel
+    env = gym.make('LunarLander-v2', render_mode="human")  # Using base environment
+    # env = LunarLanderEnvWrapper()  # Using custom environment with fuel
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
     action_space = env.action_space
     agent = DQNAgent(state_dim, action_dim, action_space)
 
     # Train the agent
-    # print("Training the agent...")
-    # train_dqn(env, agent)
+    print("Training the agent...")
+    train_dqn(env, agent)
 
     # Load the trained model
     agent.load_model('dqn_lunarlander.pth')
