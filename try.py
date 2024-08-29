@@ -5,6 +5,8 @@ import torch.nn as nn
 import torch.optim as optim
 import random
 from collections import deque
+import matplotlib.pyplot as plt
+
 from gymnasium import spaces
 
 # Custom Lunar Lander environment with fuel management
@@ -20,12 +22,6 @@ class LunarLanderEnvWrapper(gym.Env):
         self.prev_fuel = self.fuel_limit
         self.fuel_consumption_rate = 1  # Amount of fuel consumed per thrust action
 
-        # Update observation space to include fuel level
-        # self.observation_space = spaces.Box(
-        #     low=np.append(self.env.observation_space.low, 0),
-        #     high=np.append(self.env.observation_space.high, self.fuel_limit),
-        #     dtype=np.float32
-        # )
 
         self.action_space = self.env.action_space
 
@@ -81,6 +77,48 @@ class LunarLanderEnvWrapper(gym.Env):
 
     def close(self):
         self.env.close()
+
+
+class LunarLanderEnvFuel(gym.Env):
+    def __init__(self):
+        super(LunarLanderEnvFuel, self).__init__()
+        self.env = gym.make('LunarLander-v2')  # Base environment
+        self.state = None
+
+        # Fuel parameters - custom modification
+        self.fuel_limit = 100  # Maximum fuel amount
+        self.current_fuel = self.fuel_limit
+        self.prev_fuel = self.fuel_limit
+        self.fuel_consumption_rate = 1  # Amount of fuel consumed per thrust action
+
+        self.action_space = self.env.action_space
+
+    def step(self, action):
+        # Check if there is enough fuel to perform a thrust action
+        if action in [1, 2, 3] and self.current_fuel >= self.fuel_consumption_rate:
+            self.prev_fuel = self.current_fuel
+            self.current_fuel -= self.fuel_consumption_rate
+        elif action in [1, 2, 3] and self.current_fuel < self.fuel_consumption_rate:
+            # If no fuel, force 'do nothing' action (action 0)
+            action = 0
+
+        # Perform the action in the environment
+        next_state, reward, done, truncated, info = self.env.step(action)
+        self.state = next_state  # Update the state
+
+        return next_state, reward, done, truncated, info
+
+
+    def render(self, mode='human'):
+        self.env.render(mode)
+
+    def close(self):
+        self.env.close()
+
+    def reset(self):
+        self.state, info = self.env.reset()
+        self.current_fuel = self.fuel_limit
+        return self.state, info
 
 # Neural Network for DQN
 class DQN(nn.Module):
@@ -279,6 +317,7 @@ def random_search(env, num_trials=10):
 
 def test_dqn(env, agent, num_episodes=100, max_steps_per_episode=200):
     avg_reward = 0
+    rewards = []
     agent.epsilon = 0.0  # Disable exploration for testing
     for episode in range(num_episodes):
         state, info = env.reset()
@@ -296,34 +335,94 @@ def test_dqn(env, agent, num_episodes=100, max_steps_per_episode=200):
 
         print(f'Test Episode {episode + 1}/{num_episodes}, Total Reward: {total_reward}')
         avg_reward += total_reward
+        rewards.append(total_reward)
 
     avg_reward /= num_episodes
     print(f'Average Test Reward: {avg_reward}')
     env.close()
+    return rewards
+
+
+def plot_performance(rewards_classic, rewards_fuel, window=50):
+    # Calculate moving averages for smoothing
+    def moving_average(data, window_size):
+        return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
+
+    smoothed_rewards_classic = moving_average(rewards_classic, window)
+    smoothed_rewards_fuel = moving_average(rewards_fuel, window)
+
+    plt.figure(figsize=(14, 6))
+
+    # Smoothed Line Plot
+    plt.subplot(1, 2, 1)
+    plt.plot(smoothed_rewards_classic, label='Classic Env', color='b')
+    plt.plot(smoothed_rewards_fuel, label='Fuel Env', color='r')
+    plt.xlabel('Episodes')
+    plt.ylabel('Smoothed Reward')
+    plt.title('Smoothed Rewards Over Time')
+    plt.legend()
+
+    # Box Plot for Distribution of Rewards
+    plt.subplot(1, 2, 2)
+    plt.boxplot([rewards_classic, rewards_fuel], labels=['Classic Env', 'Fuel Env'])
+    plt.ylabel('Rewards')
+    plt.title('Distribution of Rewards')
+
+    plt.tight_layout()
+    plt.savefig('performance_comparison.png')
+
+    # Additional Plots: Histogram and Bar Plot
+    plt.figure(figsize=(14, 6))
+
+    # Histogram
+    plt.subplot(1, 2, 1)
+    plt.hist(rewards_classic, bins=30, alpha=0.5, label='Classic Env')
+    plt.hist(rewards_fuel, bins=30, alpha=0.5, label='Fuel Env')
+    plt.xlabel('Reward')
+    plt.ylabel('Frequency')
+    plt.title('Histogram of Rewards')
+    plt.legend()
+
+    # Bar Plot of Average Rewards
+    avg_rewards = [np.mean(rewards_classic), np.mean(rewards_fuel)]
+    plt.subplot(1, 2, 2)
+    plt.bar(['Classic Env', 'Fuel Env'], avg_rewards, color=['b', 'r'])
+    plt.ylabel('Average Reward')
+    plt.title('Average Rewards Comparison')
+
+    plt.tight_layout()
+    plt.savefig('additional_plots.png')
 
 
 # Main function
 def main():
-    # env = gym.make('LunarLander-v2', render_mode="human")  # Using base environment
-    env = LunarLanderEnvWrapper()  # Using custom environment with fuel
+    env_classic = gym.make('LunarLander-v2')  # Using base environment
+    env_fuel = LunarLanderEnvFuel()  # Using custom environment with fuel
 
     # random_search(env)  # Hyperparameter tuning
 
-    state_dim = env.env.observation_space.shape[0]
-    action_dim = env.action_space.n
-    action_space = env.action_space
+    state_dim = env_classic.observation_space.shape[0]
+    action_dim = env_classic.action_space.n
+    action_space = env_classic.action_space
     agent = DQNAgent(state_dim, action_dim, action_space)
 
     # Train the agent
-    print("Training the agent...")
-    train_dqn(env, agent)
+    # print("Training the agent...")
+    # train_dqn(env, agent)
 
     # Load the trained model
     agent.load_model('dqn_lunarlander_classic.pth')
 
-    # Test the agent
-    print("Testing the trained agent...")
-    test_dqn(env, agent)
+    # Test the agent on the classic environment
+    print("Testing the trained agent on the classic environment...")
+    rewards_classic = test_dqn(env_classic, agent, num_episodes=1000)
+
+    # Test the agent on the fuel-modified environment
+    print("Testing the trained agent on the fuel-modified environment...")
+    rewards_fuel = test_dqn(env_fuel, agent, num_episodes=1000)
+
+    # Plot the rewards
+    plot_performance(rewards_classic, rewards_fuel)
 
 if __name__ == "__main__":
     main()
