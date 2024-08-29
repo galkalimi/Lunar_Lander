@@ -1,33 +1,52 @@
-import random
+import gymnasium as gym
+import numpy as np
 import torch
-from torch import optim
-from DQN import DQN
-from ReplayBuffer import ReplayBuffer
 import torch.nn as nn
+import torch.optim as optim
+import random
+from collections import deque
+from gymnasium import spaces
 
-# DQN Agent
+
+from ReplayBuffer import ReplayBuffer
+from LunarLanderEnvWrapper import LunarLanderEnvWrapper
+from DQN import DQN
+
+
 class DQNAgent:
-    def __init__(self, state_dim, action_dim, action_space):
+    def __init__(self, state_dim, action_dim, action_space, batch_size=64, gamma=0.99, epsilon=1.0, epsilon_min=0.01,
+                 epsilon_decay=0.995, lr=0.001, memory_capacity=10000):
+        self.state_dim = state_dim
         self.action_dim = action_dim
         self.action_space = action_space
+        self.batch_size = batch_size
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.epsilon_min = epsilon_min
+        self.epsilon_decay = epsilon_decay
+        self.lr = lr
+
+        self.memory = ReplayBuffer(memory_capacity)
         self.policy_net = DQN(state_dim, action_dim)
         self.target_net = DQN(state_dim, action_dim)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
 
-        self.optimizer = optim.Adam(self.policy_net.parameters())
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=self.lr)
         self.criterion = nn.MSELoss()
-        self.memory = ReplayBuffer(10000)
-        self.batch_size = 64
-        self.gamma = 0.99
-        self.epsilon = 0.1
 
     def select_action(self, state):
         if random.random() < self.epsilon:
-            return self.action_space.sample()  # Choose a random action
-        with torch.no_grad():
-            state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)  # Add batch dimension
-            return self.policy_net(state).argmax().item()
+            action = self.action_space.sample()  # Choose a random action
+        else:
+            with torch.no_grad():
+                state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)  # Add batch dimension
+                action = self.policy_net(state).argmax().item()
+
+        # Decay epsilon
+        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
+
+        return action
 
     def optimize_model(self):
         if len(self.memory) < self.batch_size:

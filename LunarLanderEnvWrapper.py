@@ -1,18 +1,29 @@
 import gymnasium as gym
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import random
+from collections import deque
 from gymnasium import spaces
 
 
-# Custom Lunar Lander environment with fuel management
+
 class LunarLanderEnvWrapper(gym.Env):
-    def __init__(self):
-        self.env = gym.make('LunarLander-v2', render_mode="human")  # Base environment
+    def __init__(self, gravity=(0,-10), enable_wind=False, wind_power=15.0):
+        super(LunarLanderEnvWrapper, self).__init__()
+        self.env = gym.make('LunarLander-v2', render_mode="human", enable_wind=enable_wind, wind_power=wind_power)  # Base environment
         self.state = None
+        
+        # Set custom gravity
+        self.gravity = gravity
+        self.env.unwrapped.world.gravity = self.gravity
 
         # Fuel parameters - custom modification
-        self.fuel_limit = 1300  # Maximum fuel amount
+        self.fuel_limit = 1000  # Maximum fuel amount
         self.current_fuel = self.fuel_limit
-        self.fuel_consumption_rate = 5  # Amount of fuel consumed per thrust action
+        self.prev_fuel = self.fuel_limit
+        self.fuel_consumption_rate = 10  # Amount of fuel consumed per thrust action
 
         # Update observation space to include fuel level
         self.observation_space = spaces.Box(
@@ -29,28 +40,35 @@ class LunarLanderEnvWrapper(gym.Env):
         return np.append(self.state, self.current_fuel), info
 
     def step(self, action):
-        # Check if there is enough fuel to perform a thrust action
+        # Adjust action based on fuel
         if action in [1, 2, 3] and self.current_fuel >= self.fuel_consumption_rate:
             self.current_fuel -= self.fuel_consumption_rate
-        elif action in [1, 2, 3] and self.current_fuel < self.fuel_consumption_rate:
-            # If no fuel, force 'do nothing' action (action 0)
-            action = 0
+        else:
+            action = 0  # If no fuel, force 'do nothing' action
 
         # Perform the action in the environment
         next_state, reward, done, truncated, info = self.env.step(action)
 
-        # If fuel runs out, apply penalty but let the episode continue
-        if self.current_fuel < self.fuel_consumption_rate and action == 0:
-            done = True
-            reward -= 50  # Penalize for running out of fuel
-
         # Append fuel level to the state
         next_state_with_fuel = np.append(next_state, self.current_fuel)
 
+        # Check if the episode should terminate due to fuel depletion
+        if self.current_fuel <= 0:
+            print("Ran out of fuel")
+            done = True
+            reward -= 50  # Penalize for running out of fuel
+            info['termination_reason'] = 'out_of_fuel'  # Add reason to info
+
+        # Custom termination condition based on landing
+        if self.state[6]:
+            done = True
+            print("touched the ground")
+
         return next_state_with_fuel, reward, done, truncated, info
 
-    def render(self):
-        self.env.render()
+
+    def render(self, mode='human'):
+        return self.env.render()
 
     def close(self):
         self.env.close()
