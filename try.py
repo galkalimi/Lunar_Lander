@@ -15,42 +15,47 @@ class LunarLanderEnvWrapper(gym.Env):
         self.state = None
 
         # Fuel parameters - custom modification
-        self.fuel_limit = 1000  # Maximum fuel amount
+        self.fuel_limit = 200  # Maximum fuel amount
         self.current_fuel = self.fuel_limit
         self.prev_fuel = self.fuel_limit
-        self.fuel_consumption_rate = 10  # Amount of fuel consumed per thrust action
+        self.fuel_consumption_rate = 1  # Amount of fuel consumed per thrust action
 
         # Update observation space to include fuel level
-        self.observation_space = spaces.Box(
-            low=np.append(self.env.observation_space.low, 0),
-            high=np.append(self.env.observation_space.high, self.fuel_limit),
-            dtype=np.float32
-        )
+        # self.observation_space = spaces.Box(
+        #     low=np.append(self.env.observation_space.low, 0),
+        #     high=np.append(self.env.observation_space.high, self.fuel_limit),
+        #     dtype=np.float32
+        # )
 
         self.action_space = self.env.action_space
 
     def reset(self):
         self.state, info = self.env.reset()
         self.current_fuel = self.fuel_limit
-        return np.append(self.state, self.current_fuel), info
-
+        # return np.append(self.state, self.current_fuel), info
+        return self.state, info
     def step(self, action):
         # Check if there is enough fuel to perform a thrust action
-        # if action in [1, 2, 3] and self.current_fuel >= self.fuel_consumption_rate:
-        #     self.prev_fuel = self.current_fuel
-        #     self.current_fuel -= self.fuel_consumption_rate
-        # elif action in [1, 2, 3] and self.current_fuel < self.fuel_consumption_rate:
-        #     # If no fuel, force 'do nothing' action (action 0)
-        #     action = 0
+        if action in [1, 2, 3] and self.current_fuel >= self.fuel_consumption_rate:
+            self.prev_fuel = self.current_fuel
+            self.current_fuel -= self.fuel_consumption_rate
+        elif action in [1, 2, 3] and self.current_fuel < self.fuel_consumption_rate:
+            # If no fuel, force 'do nothing' action (action 0)
+            action = 0
 
 
         # Perform the action in the environment
         next_state, reward, done, truncated, info = self.env.step(action)
+        self.state = next_state  # Update the state
 
+        # check if both legs are on the ground
         if self.state[6] == 1 and self.state[7] == 1:
             done = True
 
-        # # Calculate fuel penalty based on the amount of fuel consumed
+        # if done:
+        #     reward += (self.fuel_limit - self.current_fuel) * 0.01  # Adjust penalty rate as needed
+        #
+        # # # Calculate fuel penalty based on the amount of fuel consumed
         # fuel_penalty = (self.prev_fuel - self.current_fuel) * 0.01  # Adjust penalty rate as needed
         # print(f"prev fule : {self.prev_fuel}, current fuel : {self.current_fuel}, fule_penalty: {fuel_penalty}")
         # reward -= fuel_penalty
@@ -63,9 +68,10 @@ class LunarLanderEnvWrapper(gym.Env):
         #     print(f"prev reward: {reward+50}, current reward: {reward}")
 
         # Append fuel level to the state
-        next_state_with_fuel = np.append(next_state, self.current_fuel)
-
-        return next_state_with_fuel   , reward, done, truncated, info
+        # next_state_with_fuel = np.append(next_state, self.current_fuel)
+        #
+        return next_state, reward, done, truncated, info
+        # return self.env.step(action)
 
     def render(self, mode='human'):
         self.env.render(mode)
@@ -182,7 +188,7 @@ class DQNAgent:
 
 
 # Training function
-def train_dqn(env, agent, num_episodes=5000, update_target_every=10, max_steps_per_episode=200):
+def train_dqn(env, agent, num_episodes=4200, update_target_every=10, max_steps_per_episode=200):
     for episode in range(num_episodes):
         state, info = env.reset()
         done = False
@@ -242,9 +248,9 @@ def test_dqn(env, agent, num_episodes=100, max_steps_per_episode=200):
 
 # Main function
 def main():
-    env = gym.make('LunarLander-v2', render_mode="human")  # Using base environment
-    # env = LunarLanderEnvWrapper()  # Using custom environment with fuel
-    state_dim = env.observation_space.shape[0]
+    # env = gym.make('LunarLander-v2', render_mode="human")  # Using base environment
+    env = LunarLanderEnvWrapper()  # Using custom environment with fuel
+    state_dim = env.env.observation_space.shape[0]
     action_dim = env.action_space.n
     action_space = env.action_space
     agent = DQNAgent(state_dim, action_dim, action_space)
