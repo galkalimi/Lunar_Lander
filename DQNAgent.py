@@ -12,7 +12,7 @@ from ReplayBuffer import ReplayBuffer
 from LunarLanderEnvWrapper import LunarLanderEnvWrapper
 from DQN import DQN
 
-
+#DQNAgent
 class DQNAgent:
     def __init__(self, state_dim, action_dim, action_space, batch_size=64, gamma=0.99, epsilon=1.0, epsilon_min=0.01,
                  epsilon_decay=0.995, lr=0.001, memory_capacity=10000):

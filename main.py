@@ -14,6 +14,7 @@ from ReplayBuffer import ReplayBuffer
 from LunarLanderEnvWrapper import LunarLanderEnvWrapper
 from DQN import DQN
 
+#main
 def make_gravity_rewards_comparison():
     # Example data
     gravities = np.array([-1000, -1500, -2000, -2500])
