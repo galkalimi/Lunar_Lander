@@ -13,6 +13,7 @@ from DQNAgent import DQNAgent
 from ReplayBuffer import ReplayBuffer
 from LunarLanderEnvWrapper import LunarLanderEnvWrapper
 from DQN import DQN
+from LunarLanderPIDController import LunarLanderPIDController
 
 #main
 def make_gravity_rewards_comparison():
@@ -106,23 +107,27 @@ def test_dqn(env, agent, num_episodes=100, max_steps_per_episode=200):
 # Main function
 def main():
     # render_mode="human" (add to env)
-    env = LunarLanderEnvWrapper(gravity=(0,-10), enable_wind=True, wind_power=2000.0)  # Using custom environment with fuel
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.n
-    action_space = env.action_space
-    agent = DQNAgent(state_dim, action_dim, action_space)
+    # env = LunarLanderEnvWrapper(gravity=(0,-10), enable_wind=True, wind_power=2000.0)  # Using custom environment with fuel
+    # state_dim = env.observation_space.shape[0]
+    # action_dim = env.action_space.n
+    # action_space = env.action_space
+    # agent = DQNAgent(state_dim, action_dim, action_space)
     
-    # Train the agent
-    print("Training the agent...")
-    train_dqn(env, agent)
+    # # Train the agent
+    # print("Training the agent...")
+    # train_dqn(env, agent)
 
-    # Load the trained model
-    agent.load_model('dqn_lunarlander.pth')
+    # # Load the trained model
+    # agent.load_model('dqn_lunarlander.pth')
 
-    # Test the agent
-    print("Testing the trained agent...")
-    test_env = LunarLanderEnvWrapper(gravity=(0,-100), enable_wind=True, wind_power=2000.0)  # Using custom environment with fuel
-    test_dqn(test_env, agent)
+    # # Test the agent
+    # print("Testing the trained agent...")
+    # test_env = LunarLanderEnvWrapper(gravity=(0,-100), enable_wind=True, wind_power=2000.0)  # Using custom environment with fuel
+    # test_dqn(test_env, agent)
+
+    env = gym.make("LunarLander-v2", render_mode="human")
+    pid_controller = LunarLanderPIDController(env)
+    pid_controller.run()
 
 if __name__ == "__main__":
     main()
