@@ -10,7 +10,6 @@ from gymnasium import spaces
 from ReplayBuffer import ReplayBuffer
 from LunarLanderEnvWrapper import LunarLanderEnvWrapper
 
-#DQN class
 class DQN(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(DQN, self).__init__()

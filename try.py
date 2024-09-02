@@ -393,6 +393,32 @@ def plot_performance(rewards_classic, rewards_fuel, window=50):
     plt.tight_layout()
     plt.savefig('additional_plots.png')
 
+    #TODO Gal added this section VVV
+def plot_combined_moving_average(rewards_classic, rewards_fuel, window=50):
+    # Calculate moving averages for smoothing
+    def moving_average(data, window_size):
+        if len(data) < window_size:
+            return data  # Return the original data if too short
+        return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
+
+    smoothed_rewards_classic = moving_average(rewards_classic, window)
+    smoothed_rewards_fuel = moving_average(rewards_fuel, window)
+
+    plt.figure(figsize=(10, 6))
+    
+    plt.plot(smoothed_rewards_classic, label='Classic Env', color='b')
+    plt.plot(smoothed_rewards_fuel, label='Fuel Env', color='r')
+    
+    plt.xlabel('Episodes')
+    plt.ylabel('Smoothed Reward')
+    plt.title('Combined Moving Averages of Rewards')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.tight_layout()
+    plt.savefig('combined_moving_average.png')
+    plt.show()
+
 
 # Main function
 def main():
@@ -408,7 +434,7 @@ def main():
 
     # Train the agent
     # print("Training the agent...")
-    # train_dqn(env, agent)
+    # train_dqn(env_classic, agent)
 
     # Load the trained model
     agent.load_model('dqn_lunarlander_classic.pth')
@@ -423,6 +449,7 @@ def main():
 
     # Plot the rewards
     plot_performance(rewards_classic, rewards_fuel)
+    plot_combined_moving_average(rewards_classic, rewards_fuel)
 
 if __name__ == "__main__":
     main()

@@ -6,11 +6,9 @@ import torch.optim as optim
 import random
 from collections import deque
 from gymnasium import spaces
-
-
 from ReplayBuffer import ReplayBuffer
-from LunarLanderEnvWrapper import LunarLanderEnvWrapper
 from DQN import DQN
+from LunarLanderEnvWrapper import LunarLanderEnvWrapper
 
 #DQNAgent
 class DQNAgent:
