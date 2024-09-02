@@ -6,79 +6,11 @@ import torch.optim as optim
 import random
 from collections import deque
 import matplotlib.pyplot as plt
+import os
 
 from gymnasium import spaces
 
 # Custom Lunar Lander environment with fuel management
-class LunarLanderEnvWrapper(gym.Env):
-    def __init__(self):
-        super(LunarLanderEnvWrapper, self).__init__()
-        self.env = gym.make('LunarLander-v2')  # Base environment
-        self.state = None
-
-        # Fuel parameters - custom modification
-        self.fuel_limit = 200  # Maximum fuel amount
-        self.current_fuel = self.fuel_limit
-        self.prev_fuel = self.fuel_limit
-        self.fuel_consumption_rate = 1  # Amount of fuel consumed per thrust action
-
-
-        self.action_space = self.env.action_space
-
-    def reset(self):
-        self.state, info = self.env.reset()
-        self.current_fuel = self.fuel_limit
-        # return np.append(self.state, self.current_fuel), info
-        return self.state, info
-    def step(self, action):
-        # Check if there is enough fuel to perform a thrust action
-        fuel_penalty = 0
-        # if action in [1, 2, 3] and self.current_fuel >= self.fuel_consumption_rate:
-        #     self.prev_fuel = self.current_fuel
-        #     self.current_fuel -= self.fuel_consumption_rate
-        #     fuel_penalty = 0.05
-        # elif action in [1, 2, 3] and self.current_fuel < self.fuel_consumption_rate:
-        #     # If no fuel, force 'do nothing' action (action 0)
-        #     action = 0
-
-
-        # Perform the action in the environment
-        next_state, reward, done, truncated, info = self.env.step(action)
-        self.state = next_state  # Update the state
-
-        # check if both legs are on the ground
-        # if self.state[6] == 1 and self.state[7] == 1:
-        #     done = True
-
-        # if done:
-        #     reward += (self.fuel_limit - self.current_fuel) * 0.01  # Adjust penalty rate as needed
-        #
-        # # # Calculate fuel penalty based on the amount of fuel consumed
-        # fuel_penalty = (self.prev_fuel - self.current_fuel) * 0.01  # Adjust penalty rate as needed
-        # print(f"prev fule : {self.prev_fuel}, current fuel : {self.current_fuel}, fule_penalty: {fuel_penalty}")
-        # reward -= fuel_penalty
-
-        # Check if the episode should terminate due to fuel depletion
-        # if self.current_fuel <= 0:
-        #     done = True
-        #     reward -= 50  # Penalize for running out of fuel
-        #     info['termination_reason'] = 'out_of_fuel'  # Add reason to info
-        #     print(f"prev reward: {reward+50}, current reward: {reward}")
-
-        # Append fuel level to the state
-        # next_state_with_fuel = np.append(next_state, self.current_fuel)
-        #
-        # reward -= fuel_penalty
-        return next_state, reward, done, truncated, info
-        # return self.env.step(action)
-
-    def render(self, mode='human'):
-        self.env.render(mode)
-
-    def close(self):
-        self.env.close()
-
-
 class LunarLanderEnvFuel(gym.Env):
     def __init__(self):
         super(LunarLanderEnvFuel, self).__init__()
@@ -118,6 +50,38 @@ class LunarLanderEnvFuel(gym.Env):
     def reset(self):
         self.state, info = self.env.reset()
         self.current_fuel = self.fuel_limit
+        return self.state, info
+
+class LunarLanderEnvMalfunction(gym.Env):
+    def __init__(self):
+        super(LunarLanderEnvMalfunction, self).__init__()
+        self.env = gym.make('LunarLander-v2')  # Base environment
+        self.state = None
+
+        # Malfunction parameters
+        self.malfunction_probability = 0.1  # 20% chance of engine malfunction
+        # self.malfunction_duration = 50  # Duration of malfunction in steps
+    def step(self, action):
+        # Check if there is a malfunction
+        if random.random() < self.malfunction_probability:
+            # Malfunction occurs
+            action = 0  # Force 'do nothing' action
+
+        next_state, reward, done, truncated, info = self.env.step(action)
+        self.state = next_state  # Update the state
+
+        return next_state, reward, done, truncated, info
+
+
+
+    def render(self, mode='human'):
+        self.env.render(mode)
+
+    def close(self):
+        self.env.close()
+
+    def reset(self):
+        self.state, info = self.env.reset()
         return self.state, info
 
 # Neural Network for DQN
@@ -229,8 +193,17 @@ class DQNAgent:
 
 
 # Training function
-def train_dqn(env, agent, num_episodes=4200, update_target_every=10, max_steps_per_episode=200):
+def train_dqn(env, agent, num_episodes=5000 , update_target_every=10, max_steps_per_episode=200):
     all_rewards = []  # List to store total rewards for each episode
+    plot_dir = 'training_plots'
+    if not os.path.exists(plot_dir):
+        os.makedirs(plot_dir)
+
+    def moving_average(data, window_size):
+        return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
+
+    losses = []  # To store loss values
+    epsilons = []  # To store epsilon decay values
 
     for episode in range(num_episodes):
         state, info = env.reset()
@@ -242,13 +215,30 @@ def train_dqn(env, agent, num_episodes=4200, update_target_every=10, max_steps_p
             next_state, reward, done, truncated, info = env.step(action)
             total_reward += reward
 
+            # Add experience to replay buffer
             agent.memory.push((torch.tensor(state, dtype=torch.float32),
                                torch.tensor(action),
                                torch.tensor(reward, dtype=torch.float32),
                                torch.tensor(next_state, dtype=torch.float32),
                                torch.tensor(done, dtype=torch.float32)))
 
+            # Optimize the model
             agent.optimize_model()
+
+            # Log loss and epsilon decay
+            state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0)  # Add batch dimension
+            q_values = agent.policy_net(state_tensor)
+
+            # Compute loss only if q_values has the expected dimensions
+            if q_values.dim() > 1:
+                max_q_values = q_values.max(1)[0]
+            else:
+                max_q_values = q_values.max(0)[0]  # Use max(0) if the tensor is 1D
+
+            loss = agent.criterion(max_q_values, torch.tensor(reward, dtype=torch.float32))
+            losses.append(loss.item())
+            epsilons.append(agent.epsilon)
+
             state = next_state
 
             if done or truncated:
@@ -256,8 +246,42 @@ def train_dqn(env, agent, num_episodes=4200, update_target_every=10, max_steps_p
 
         all_rewards.append(total_reward)  # Store total reward for this episode
 
-        if episode % update_target_every == 0:
-            agent.target_net.load_state_dict(agent.policy_net.state_dict())
+        # Plotting and saving figures
+        if episode % 50 == 0:
+            plt.figure(figsize=(15, 5))
+
+            # Total Reward Plot
+            plt.subplot(1, 3, 1)
+            plt.plot(all_rewards, label='Total Reward')
+            if len(all_rewards) >= 50:
+                plt.plot(moving_average(all_rewards, 50), label='Moving Average (50 episodes)', color='orange')
+            plt.xlabel('Episode')
+            plt.ylabel('Total Reward')
+            plt.title('Training Progress')
+            plt.legend()
+            plt.grid(True)
+
+            # Loss Plot
+            plt.subplot(1, 3, 2)
+            plt.plot(losses, label='Loss', color='r')
+            plt.xlabel('Episode')
+            plt.ylabel('Loss')
+            plt.title('Loss During Training')
+            plt.legend()
+            plt.grid(True)
+
+            # Epsilon Decay Plot
+            plt.subplot(1, 3, 3)
+            plt.plot(epsilons, label='Epsilon Decay', color='g')
+            plt.xlabel('Episode')
+            plt.ylabel('Epsilon')
+            plt.title('Exploration Rate Decay')
+            plt.legend()
+            plt.grid(True)
+
+            plt.tight_layout()
+            plt.savefig(os.path.join(plot_dir, f'training_progress_{episode}.png'))
+            plt.close()
 
         print(f'Episode {episode + 1}/{num_episodes}, Total Reward: {total_reward}')
 
@@ -266,6 +290,7 @@ def train_dqn(env, agent, num_episodes=4200, update_target_every=10, max_steps_p
     env.close()
 
     return all_rewards
+
 
 # Hyperparameter tuning using Random Search
 def random_search(env, num_trials=10):
@@ -315,10 +340,11 @@ def random_search(env, num_trials=10):
     print(f"Best Hyperparameters: {best_hyperparams}")
     print(f"Best Average Reward: {best_avg_reward}")
 
-def test_dqn(env, agent, num_episodes=100, max_steps_per_episode=200):
+def test_dqn(env, agent, num_episodes=100, max_steps_per_episode=200, action_space=None, env_name='Classic'):
     avg_reward = 0
     rewards = []
     agent.epsilon = 0.0  # Disable exploration for testing
+    actions_count = np.zeros(action_space.n)  # To count actions
     for episode in range(num_episodes):
         state, info = env.reset()
         done = False
@@ -326,6 +352,7 @@ def test_dqn(env, agent, num_episodes=100, max_steps_per_episode=200):
 
         for _ in range(max_steps_per_episode):
             action = agent.select_action(state)
+            actions_count[action] += 1  # Count the action
             next_state, reward, done, truncated, info = env.step(action)
             total_reward += reward
             state = next_state
@@ -339,37 +366,54 @@ def test_dqn(env, agent, num_episodes=100, max_steps_per_episode=200):
 
     avg_reward /= num_episodes
     print(f'Average Test Reward: {avg_reward}')
+
+    # Plotting the action distribution
+    plt.figure(figsize=(10, 5))
+    plt.bar(range(action_space.n), actions_count, tick_label=[f'Action {i}' for i in range(action_space.n)])
+    plt.xlabel('Actions')
+    plt.ylabel('Count')
+    plt.title('Action Distribution During Testing')
+    plt.grid(True)
+    plt.savefig(f'action_distribution_testing_{env_name}.png')
+    plt.close()
+
     env.close()
     return rewards
 
 
-def plot_performance(rewards_classic, rewards_fuel, window=50):
+    avg_reward /= num_episodes
+    print(f'Average Test Reward: {avg_reward}')
+    env.close()
+    return rewards
+
+
+def plot_performance(rewards_classic, rewards_other, other_env_name, window=50):
     # Calculate moving averages for smoothing
     def moving_average(data, window_size):
         return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
 
     smoothed_rewards_classic = moving_average(rewards_classic, window)
-    smoothed_rewards_fuel = moving_average(rewards_fuel, window)
+    smoothed_rewards_fuel = moving_average(rewards_other, window)
 
     plt.figure(figsize=(14, 6))
 
     # Smoothed Line Plot
-    plt.subplot(1, 2, 1)
+    # plt.subplot(1, 2, 1)
     plt.plot(smoothed_rewards_classic, label='Classic Env', color='b')
-    plt.plot(smoothed_rewards_fuel, label='Fuel Env', color='r')
+    plt.plot(smoothed_rewards_fuel, label=other_env_name, color='r')
     plt.xlabel('Episodes')
     plt.ylabel('Smoothed Reward')
     plt.title('Smoothed Rewards Over Time')
     plt.legend()
 
-    # Box Plot for Distribution of Rewards
-    plt.subplot(1, 2, 2)
-    plt.boxplot([rewards_classic, rewards_fuel], labels=['Classic Env', 'Fuel Env'])
-    plt.ylabel('Rewards')
-    plt.title('Distribution of Rewards')
+    # # Box Plot for Distribution of Rewards
+    # plt.subplot(1, 2, 2)
+    # plt.boxplot([rewards_classic, rewards_other], labels=['Classic Env', other_env_name])
+    # plt.ylabel('Rewards')
+    # plt.title('Distribution of Rewards')
 
     plt.tight_layout()
-    plt.savefig('performance_comparison.png')
+    plt.savefig(f'performance_comparison_{other_env_name}.png')
 
     # Additional Plots: Histogram and Bar Plot
     plt.figure(figsize=(14, 6))
@@ -377,28 +421,33 @@ def plot_performance(rewards_classic, rewards_fuel, window=50):
     # Histogram
     plt.subplot(1, 2, 1)
     plt.hist(rewards_classic, bins=30, alpha=0.5, label='Classic Env')
-    plt.hist(rewards_fuel, bins=30, alpha=0.5, label='Fuel Env')
+    plt.hist(rewards_other, bins=30, alpha=0.5, label=other_env_name)
     plt.xlabel('Reward')
     plt.ylabel('Frequency')
     plt.title('Histogram of Rewards')
     plt.legend()
 
     # Bar Plot of Average Rewards
-    avg_rewards = [np.mean(rewards_classic), np.mean(rewards_fuel)]
+    avg_rewards = [np.mean(rewards_classic), np.mean(rewards_other)]
     plt.subplot(1, 2, 2)
-    plt.bar(['Classic Env', 'Fuel Env'], avg_rewards, color=['b', 'r'])
+    plt.bar(['Classic Env', other_env_name], avg_rewards, color=['b', 'r'])
     plt.ylabel('Average Reward')
     plt.title('Average Rewards Comparison')
 
     plt.tight_layout()
-    plt.savefig('additional_plots.png')
+    plt.savefig(f'rewards_comparison_classic_vs_{other_env_name}.png')
 
 
 # Main function
 def main():
+    random.seed(42)
+    np.random.seed(42)
+    torch.manual_seed(42)
     env_classic = gym.make('LunarLander-v2')  # Using base environment
     env_fuel = LunarLanderEnvFuel()  # Using custom environment with fuel
+    env_malfunction = LunarLanderEnvMalfunction()  # Using custom environment with malfunction
 
+    # env_fuel.env.seed(42)
     # random_search(env)  # Hyperparameter tuning
 
     state_dim = env_classic.observation_space.shape[0]
@@ -407,22 +456,27 @@ def main():
     agent = DQNAgent(state_dim, action_dim, action_space)
 
     # Train the agent
-    # print("Training the agent...")
-    # train_dqn(env, agent)
+    print("Training the agent...")
+    train_dqn(env_classic, agent)
 
     # Load the trained model
-    agent.load_model('dqn_lunarlander_classic.pth')
+    agent.load_model('dqn_lunarlander_classic.pth')  # this is the model trained on the classic environment
 
     # Test the agent on the classic environment
     print("Testing the trained agent on the classic environment...")
-    rewards_classic = test_dqn(env_classic, agent, num_episodes=1000)
+    rewards_classic = test_dqn(env_classic, agent, num_episodes=100, action_space=action_space)
 
     # Test the agent on the fuel-modified environment
     print("Testing the trained agent on the fuel-modified environment...")
-    rewards_fuel = test_dqn(env_fuel, agent, num_episodes=1000)
+    rewards_fuel = test_dqn(env_fuel, agent, num_episodes=100, action_space=action_space, env_name='Fuel')
 
-    # Plot the rewards
-    plot_performance(rewards_classic, rewards_fuel)
+    print("Testing the trained agent on the malfunction environment...")
+    rewards_malfunction = test_dqn(env_malfunction, agent, num_episodes=100, action_space=action_space, env_name='Malfunction')
+
+    # Plot the rewards for comparison
+    plot_performance(rewards_classic, rewards_fuel, 'Fuel Env')
+    plot_performance(rewards_classic, rewards_malfunction, 'Malfunction Env')
+
 
 if __name__ == "__main__":
     main()
