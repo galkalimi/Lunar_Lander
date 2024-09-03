@@ -1,12 +1,4 @@
 import gymnasium as gym
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import random
-from collections import deque
-from gymnasium import spaces
-
 
 #LunarLanderEnvWrapper
 class LunarLanderEnvWrapper(gym.Env):
@@ -28,12 +20,6 @@ class LunarLanderEnvWrapper(gym.Env):
     def step(self, action):
         # Perform the action in the environment
         next_state, reward, done, truncated, info = self.env.step(action)
-
-        # # Custom termination condition based on landing
-        # if self.state[6]:
-        #     done = True
-        #     print("touched the ground")
-
         return next_state, reward, done, truncated, info
 
     def render(self, mode='human'):
