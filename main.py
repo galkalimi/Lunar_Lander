@@ -2,18 +2,12 @@ from re import T
 import gymnasium as gym
 import numpy as np
 import matplotlib.pyplot as plt
-from gymnasium.wrappers import RecordVideo
 import torch
-import torch.nn as nn
-import torch.optim as optim
 import random
-from collections import deque
-from gymnasium import spaces
 from DQNAgent import DQNAgent
 from LunarLanderEnvFuel import LunarLanderEnvFuel
-from ReplayBuffer import ReplayBuffer
+from LunarLanderEnvMalfunction import LunarLanderEnvMalfunction
 from LunarLanderEnvWrapper import LunarLanderEnvWrapper
-from DQN import DQN
 from LunarLanderPIDController import LunarLanderPIDController
 
 #main
@@ -246,8 +240,8 @@ def pid_plot_performance(rewards_classic, rewards_fuel, rewards_wind, rewards_gr
     plt.legend()
     plt.show()
 
-def plot_combined_performance(dqn_rewards_classic, dqn_rewards_fuel, dqn_rewards_wind, dqn_rewards_gravity,
-                              pid_rewards_classic, pid_rewards_fuel, pid_rewards_wind, pid_rewards_gravity,
+def plot_combined_performance(dqn_rewards_classic, dqn_rewards_fuel, dqn_rewards_wind, dqn_rewards_gravity, dqn_rewards_malfunction,
+                              pid_rewards_classic, pid_rewards_fuel, pid_rewards_wind, pid_rewards_gravity, pid_rewards_malfunction,
                               window=50, save_files=False, filenames=None, united_filename_dqn=None, united_filename_pid=None):
     # Calculate moving averages for smoothing
     def moving_average(data, window_size):
@@ -258,21 +252,23 @@ def plot_combined_performance(dqn_rewards_classic, dqn_rewards_fuel, dqn_rewards
     smoothed_dqn_fuel = moving_average(dqn_rewards_fuel, window)
     smoothed_dqn_wind = moving_average(dqn_rewards_wind, window)
     smoothed_dqn_gravity = moving_average(dqn_rewards_gravity, window)
+    smoothed_dqn_malfunction = moving_average(dqn_rewards_malfunction, window)
 
     # Smoothed rewards for PID
     smoothed_pid_classic = moving_average(pid_rewards_classic, window)
     smoothed_pid_fuel = moving_average(pid_rewards_fuel, window)
     smoothed_pid_wind = moving_average(pid_rewards_wind, window)
     smoothed_pid_gravity = moving_average(pid_rewards_gravity, window)
+    smoothed_pid_malfunction = moving_average(pid_rewards_malfunction, window)
 
     # Create and save individual plots
-    env_titles = ['Classic Environment', 'Fuel Environment', 'Wind Environment', 'Gravity Environment']
-    dqn_rewards = [smoothed_dqn_classic, smoothed_dqn_fuel, smoothed_dqn_wind, smoothed_dqn_gravity]
-    pid_rewards = [smoothed_pid_classic, smoothed_pid_fuel, smoothed_pid_wind, smoothed_pid_gravity]
-    colors = ['b', 'r', 'g', 'm']
+    env_titles = ['Classic Environment', 'Fuel Environment', 'Wind Environment', 'Gravity Environment', 'Malfunction Environment']
+    dqn_rewards = [smoothed_dqn_classic, smoothed_dqn_fuel, smoothed_dqn_wind, smoothed_dqn_gravity, smoothed_dqn_malfunction]
+    pid_rewards = [smoothed_pid_classic, smoothed_pid_fuel, smoothed_pid_wind, smoothed_pid_gravity, smoothed_pid_malfunction]
+    colors = ['b', 'r', 'g', 'm', 'c']
 
     if save_files and filenames:
-        for i in range(4):
+        for i in range(5):
             plt.figure(figsize=(7, 6))
             plt.plot(dqn_rewards[i], label=f'DQN - {env_titles[i]}', color=colors[i])
             plt.plot(pid_rewards[i], label=f'PID - {env_titles[i]}', color=colors[i], linestyle='--')
@@ -289,6 +285,7 @@ def plot_combined_performance(dqn_rewards_classic, dqn_rewards_fuel, dqn_rewards
     plt.plot(smoothed_dqn_fuel, label='DQN - Fuel Env', color='r')
     plt.plot(smoothed_dqn_wind, label='DQN - Wind Env', color='g')
     plt.plot(smoothed_dqn_gravity, label='DQN - Gravity Env', color='m')
+    plt.plot(smoothed_dqn_malfunction, label='DQN - Malfunction Env', color='c')
     plt.title('DQN Performance Across All Environments')
     plt.xlabel('Episodes')
     plt.ylabel('Smoothed Reward')
@@ -303,6 +300,7 @@ def plot_combined_performance(dqn_rewards_classic, dqn_rewards_fuel, dqn_rewards
     plt.plot(smoothed_pid_fuel, label='PID - Fuel Env', color='r', linestyle='--')
     plt.plot(smoothed_pid_wind, label='PID - Wind Env', color='g', linestyle='--')
     plt.plot(smoothed_pid_gravity, label='PID - Gravity Env', color='m', linestyle='--')
+    plt.plot(smoothed_pid_malfunction, label='PID - Malfunction Env', color='c', linestyle='--')
     plt.title('PID Performance Across All Environments')
     plt.xlabel('Episodes')
     plt.ylabel('Smoothed Reward')
@@ -311,7 +309,8 @@ def plot_combined_performance(dqn_rewards_classic, dqn_rewards_fuel, dqn_rewards
         plt.savefig(united_filename_pid)
     plt.show()
 
-def plot_classic_comparisons(rewards_classic, rewards_fuel, rewards_wind, rewards_gravity, window=50, save_files=False, filenames=None):
+def plot_classic_comparisons(rewards_classic, rewards_fuel, rewards_wind, rewards_gravity, rewards_malfunction,
+                              window=50, save_files=False, filenames=None):
     # Calculate moving averages for smoothing
     def moving_average(data, window_size):
         return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
@@ -321,6 +320,7 @@ def plot_classic_comparisons(rewards_classic, rewards_fuel, rewards_wind, reward
     smoothed_rewards_fuel = moving_average(rewards_fuel, window)
     smoothed_rewards_wind = moving_average(rewards_wind, window)
     smoothed_rewards_gravity = moving_average(rewards_gravity, window)
+    smoothed_rewards_malfunction = moving_average(rewards_malfunction, window)
 
     # Plot Classic vs Fuel
     plt.figure(figsize=(10, 6))
@@ -355,12 +355,29 @@ def plot_classic_comparisons(rewards_classic, rewards_fuel, rewards_wind, reward
     if save_files and filenames:
         plt.savefig(filenames[2])
 
+    # Plot Classic vs Malfunction
+    plt.figure(figsize=(10, 6))
+    plt.plot(smoothed_rewards_classic, label='Classic Env', color='b')
+    plt.plot(smoothed_rewards_malfunction, label='Malfunction Env', color='c')
+    plt.xlabel('Episodes')
+    plt.ylabel('Smoothed Reward')
+    plt.title('Classic vs Malfunction Environment')
+    plt.legend()
+    if save_files and filenames:
+        plt.savefig(filenames[3])
+
+    # Show all plots if not saving
+    if not save_files:
+        plt.show()
+
 # Main function
 def main():
     env_classic = LunarLanderEnvWrapper()
     env_fuel = LunarLanderEnvFuel()  # Using custom environment with fuel
     env_wind = LunarLanderEnvWrapper(gravity=(0,-10), enable_wind=True, wind_power=20.0)  # Using custom environment with wind
     env_gravity = LunarLanderEnvWrapper(gravity=(0,-20))  # Using custom environment with different gravity
+    env_malfunction = LunarLanderEnvMalfunction()  # Using custom environment with malfunction
+
 
     # random_search(env)  # Hyperparameter tuning
     state_dim = env_classic.observation_space.shape[0]
@@ -376,6 +393,7 @@ def main():
     pid_fuel_controller = LunarLanderPIDController(env_fuel)
     pid_wind_controller = LunarLanderPIDController(env_wind)
     pid_gravity_controller = LunarLanderPIDController(env_gravity)
+    pid_malfunction_controller = LunarLanderPIDController(env_malfunction)
     # pid_controller.run()
 
     # Load the trained model
@@ -392,22 +410,29 @@ def main():
     pid_rewards_fuel = test_pid(env_classic, pid_fuel_controller, num_episodes=1000)
 
     # Test the agent on the wind-modified environment
-    print("Testing the trained agent on the fuel-modified environment...")
+    print("Testing the trained agent on the wind-modified environment...")
     dqn_rewards_wind = test_dqn(env_wind, agent, num_episodes=1000)
     pid_rewards_wind = test_pid(env_classic, pid_wind_controller, num_episodes=1000)
 
     # Test the agent on the gravity-modified environment
-    print("Testing the trained agent on the fuel-modified environment...")
+    print("Testing the trained agent on the gravity-modified environment...")
     dqn_rewards_gravity = test_dqn(env_gravity, agent, num_episodes=1000)
     pid_rewards_gravity = test_pid(env_classic, pid_gravity_controller, num_episodes=1000)
 
+    # Test the agent on the malfunction-modified environment
+    print("Testing the trained agent on the malfunction-modified environment...")
+    dqn_rewards_malfunction = test_dqn(env_malfunction, agent, num_episodes=1000)
+    pid_rewards_malfunction = test_pid(env_malfunction, pid_malfunction_controller, num_episodes=1000)
+
     # Plot the rewards  
-    plot_combined_performance(dqn_rewards_classic, dqn_rewards_fuel, dqn_rewards_wind, dqn_rewards_gravity,
-                          pid_rewards_classic, pid_rewards_fuel, pid_rewards_wind, pid_rewards_gravity,
-                          save_files=True, filenames=['classic_comparison.png', 'fuel_comparison.png', 'wind_comparison.png', 'gravity_comparison.png'],
+    plot_combined_performance(dqn_rewards_classic, dqn_rewards_fuel, dqn_rewards_wind, dqn_rewards_gravity, dqn_rewards_malfunction,
+                          pid_rewards_classic, pid_rewards_fuel, pid_rewards_wind, pid_rewards_gravity, pid_rewards_malfunction,
+                          save_files=True, filenames=['classic_comparison.png', 'fuel_comparison.png', 'wind_comparison.png',
+                                                      'gravity_comparison.png', 'gravity_comparison.png', 'malfunction_comparison.png'],
                           united_filename_dqn='all_dqn_comparison.png', united_filename_pid='all_pid_comparison.png')
-    plot_classic_comparisons(dqn_rewards_classic, dqn_rewards_fuel, dqn_rewards_wind, dqn_rewards_gravity,
-                         save_files=True, filenames=['classic_vs_fuel.png', 'classic_vs_wind.png', 'classic_vs_gravity.png'])
+    plot_classic_comparisons(dqn_rewards_classic, dqn_rewards_fuel, dqn_rewards_wind, dqn_rewards_gravity, dqn_rewards_malfunction,
+                         save_files=True, filenames=['classic_vs_fuel.png', 'classic_vs_wind.png',
+                                                     'classic_vs_gravity.png', 'classic_vs_malfunction.png'])
     
 
 if __name__ == "__main__":

@@ -60,18 +60,14 @@ class LunarLanderPIDController:
 
         # Vertical control
         thrust = self.vertical_pid.compute(vy, dt=1/25)  # Assuming 25Hz update rate
-        thrust = self.vertical_pid.compute(vy, dt=1/25)  # Assuming 25Hz update rate
 
         # Horizontal control
-        side_thrust = self.horizontal_pid.compute(vx, dt=1/25)
         side_thrust = self.horizontal_pid.compute(vx, dt=1/25)
 
         # Angular control
         angle_adjustment = self.angle_pid.compute(theta, dt=1/25)
-        angle_adjustment = self.angle_pid.compute(theta, dt=1/25)
 
         # Convert PID output to discrete actions
-        if thrust > 0.5:
         if thrust > 0.5:
             action = 2  # Main engine fire
         elif side_thrust > 0.1:
@@ -104,12 +100,6 @@ class LunarLanderPIDController:
                 action = self.select_action(state)
                 state, reward, done, truncated, info = self.env.step(action)
                 self.env.render()
-                # time.sleep(0.02)  # Slow down rendering to make it visible
-                episode_reward += reward  # Accumulate reward
-
-            total_scores.append(episode_reward)  # Store the total reward for this episode
-            print(f'Episode {i+1} Total Reward: {episode_reward}')
-    
                 # time.sleep(0.02)  # Slow down rendering to make it visible
                 episode_reward += reward  # Accumulate reward
 
