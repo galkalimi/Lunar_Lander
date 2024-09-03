@@ -428,7 +428,7 @@ def main():
     plot_combined_performance(dqn_rewards_classic, dqn_rewards_fuel, dqn_rewards_wind, dqn_rewards_gravity, dqn_rewards_malfunction,
                           pid_rewards_classic, pid_rewards_fuel, pid_rewards_wind, pid_rewards_gravity, pid_rewards_malfunction,
                           save_files=True, filenames=['classic_comparison.png', 'fuel_comparison.png', 'wind_comparison.png',
-                                                      'gravity_comparison.png', 'gravity_comparison.png', 'malfunction_comparison.png'],
+                                                      'gravity_comparison.png', 'malfunction_comparison.png'],
                           united_filename_dqn='all_dqn_comparison.png', united_filename_pid='all_pid_comparison.png')
     plot_classic_comparisons(dqn_rewards_classic, dqn_rewards_fuel, dqn_rewards_wind, dqn_rewards_gravity, dqn_rewards_malfunction,
                          save_files=True, filenames=['classic_vs_fuel.png', 'classic_vs_wind.png',
