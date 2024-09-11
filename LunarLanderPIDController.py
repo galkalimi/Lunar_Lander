@@ -80,7 +80,7 @@ class LunarLanderPIDController:
 
         return action
 
-    def run(self):
+    def run(self, stop_event=None, num_iterations=100):
         """
         Runs multiple episodes of the environment with the PID controller and tracks performance.
 
@@ -91,10 +91,9 @@ class LunarLanderPIDController:
         Returns:
             None
         """
-        total_scores = []
-        episode_errors = []  # To track errors over time
-
-        for i in range(10000):  # Run multiple episodes
+        for i in range(num_iterations):  # Run multiple episodes
+            if stop_event and stop_event.is_set():
+                break
             state, _ = self.env.reset()
             done = False
             episode_reward = 0  # Track total reward for the episode
@@ -103,46 +102,11 @@ class LunarLanderPIDController:
                 action = self.select_action(state)
                 state, reward, done, truncated, info = self.env.step(action)
                 self.env.render()
-                episode_reward += reward  # Accumulate reward
 
                  # Collecting error data for plotting
                 x, y, vx, vy, theta, omega, left_leg_contact, right_leg_contact = state
                 error_vy = self.vertical_pid.setpoint - vy
                 error_vx = self.horizontal_pid.setpoint - vx
                 error_theta = self.angle_pid.setpoint - theta
-                episode_errors.append((error_vy, error_vx, error_theta))
-
-            total_scores.append(episode_reward)  # Store the total reward for this episode
-            print(f'Episode {i+1} Total Reward: {episode_reward}')
-    
+                   
         self.env.close()
-        average_score = sum(total_scores) / len(total_scores)
-        print(f'Average Reward over {len(total_scores)} episodes: {average_score}')
-
-        # Plotting the results
-        self.plot_results(total_scores, episode_errors)
-
-    
-    def plot_results(self, total_scores, episode_errors):
-        # Plot Total Reward Over Episodes
-        plt.figure(figsize=(10, 6))
-        plt.plot(total_scores, label='Total Reward per Episode')
-        plt.xlabel('Episode')
-        plt.ylabel('Total Reward')
-        plt.title('Reward Over Episodes')
-        plt.grid(True)
-        plt.show()
-
-        # Plot Error Reduction Over Time
-        vertical_errors, horizontal_errors, angular_errors = zip(*episode_errors)
-        
-        plt.figure(figsize=(10, 6))
-        plt.plot(vertical_errors, label='Vertical Error')
-        plt.plot(horizontal_errors, label='Horizontal Error')
-        plt.plot(angular_errors, label='Angular Error')
-        plt.xlabel('Time Step')
-        plt.ylabel('Error')
-        plt.title('Error Reduction Over Time')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
