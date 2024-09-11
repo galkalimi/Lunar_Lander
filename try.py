@@ -246,6 +246,10 @@ def train_dqn(env, agent, num_episodes=5000 , update_target_every=10, max_steps_
 
         all_rewards.append(total_reward)  # Store total reward for this episode
 
+        # Update the target network
+        if episode % update_target_every == 0:
+            agent.target_net.load_state_dict(agent.policy_net.state_dict())
+
         # Plotting and saving figures
         if episode % 50 == 0:
             plt.figure(figsize=(15, 5))
@@ -435,7 +439,33 @@ def plot_performance(rewards_classic, rewards_other, other_env_name, window=50):
     plt.title('Average Rewards Comparison')
 
     plt.tight_layout()
-    plt.savefig(f'rewards_comparison_classic_vs_{other_env_name}.png')
+    plt.savefig('additional_plots.png')
+
+    #TODO Gal added this section VVV
+def plot_combined_moving_average(rewards_classic, rewards_fuel, window=50):
+    # Calculate moving averages for smoothing
+    def moving_average(data, window_size):
+        if len(data) < window_size:
+            return data  # Return the original data if too short
+        return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
+
+    smoothed_rewards_classic = moving_average(rewards_classic, window)
+    smoothed_rewards_fuel = moving_average(rewards_fuel, window)
+
+    plt.figure(figsize=(10, 6))
+    
+    plt.plot(smoothed_rewards_classic, label='Classic Env', color='b')
+    plt.plot(smoothed_rewards_fuel, label='Fuel Env', color='r')
+    
+    plt.xlabel('Episodes')
+    plt.ylabel('Smoothed Reward')
+    plt.title('Combined Moving Averages of Rewards')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.tight_layout()
+    plt.savefig('combined_moving_average.png')
+    plt.show()
 
 
 # Main function
@@ -456,7 +486,7 @@ def main():
     agent = DQNAgent(state_dim, action_dim, action_space)
 
     # Train the agent
-    print("Training the agent...")
+    # print("Training the agent...")
     train_dqn(env_classic, agent)
 
     # Load the trained model
@@ -473,10 +503,9 @@ def main():
     print("Testing the trained agent on the malfunction environment...")
     rewards_malfunction = test_dqn(env_malfunction, agent, num_episodes=100, action_space=action_space, env_name='Malfunction')
 
-    # Plot the rewards for comparison
-    plot_performance(rewards_classic, rewards_fuel, 'Fuel Env')
-    plot_performance(rewards_classic, rewards_malfunction, 'Malfunction Env')
-
+    # Plot the rewards
+    plot_performance(rewards_classic, rewards_fuel)
+    plot_combined_moving_average(rewards_classic, rewards_fuel)
 
 if __name__ == "__main__":
     main()
