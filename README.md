@@ -1,5 +1,5 @@
 # Lunar Lander Project
-![image](https://github.com/user-attachments/assets/e0a45346-768a-4882-b533-2bbc21e86cf0)
+![image](https://github.com/user-attachments/assets/f6f3293f-54e3-4022-826a-a819a3a16853)
 
 
 ## Overview
