@@ -21,12 +21,15 @@ The GUI provides the following features:
     - **Wind Power**: Change wind conditions to introduce variability into the simulation.
     - **Fuel Limit**: Set fuel constraints to challenge the controllers.
     - **Malfunction**: Toggle random malfunctions to simulate real-world issues.
-- **Controller Selection**:
-  Choose between PID and DQN controllers.
-- **Number of Iterations**:
-  Define the number of simulation runs.
-- **Run and Exit Buttons**:
-  Start simulations or close the application.
+    
+- **Controller Selection**:  
+  Select between the **PID** or **DQN** controller for the simulation.
+
+- **Number of Iterations**:  
+  Define how many simulation runs should be executed.
+
+- **Run and Exit Buttons**:  
+  Use the **Run** button to start simulations or the **Exit** button to close the application.
 
 ## Installation
 
