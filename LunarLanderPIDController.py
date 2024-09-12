@@ -99,7 +99,6 @@ class LunarLanderPIDController:
             while not done:
                 action = self.select_action(state)
                 state, reward, done, truncated, info = self.env.step(action)
-                self.env.render()
 
                  # Collecting error data for plotting
                 x, y, vx, vy, theta, omega, left_leg_contact, right_leg_contact = state

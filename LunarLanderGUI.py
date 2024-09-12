@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QCheckBox, QPushButton, QSpinBox, QMessageBox
 from PyQt5.QtCore import Qt
+import gymnasium as gym
 from LunarLanderEnvWrapper import LunarLanderEnvWrapper
 from DQNAgent import DQNAgent
 from LunarLanderPIDController import LunarLanderPIDController
@@ -24,6 +25,18 @@ class LunarLanderGUI(QMainWindow):
         input_layout = QVBoxLayout(input_frame)
         input_frame.setStyleSheet("background-color: #2c2c2c; border: 1px solid #FFFFFF;")
         layout.addWidget(input_frame)
+
+        # Environment selection
+        env_layout = QHBoxLayout()
+        env_label = QLabel("Choose Environment:")
+        env_label.setStyleSheet("font-size: 12pt; font-weight: bold;")
+        self.env_choice = QComboBox()
+        self.env_choice.addItems(["Original", "Custom"])
+        self.env_choice.setCurrentText("Original")
+        self.env_choice.currentTextChanged.connect(self.toggle_custom_inputs)
+        env_layout.addWidget(env_label)
+        env_layout.addWidget(self.env_choice)
+        input_layout.addLayout(env_layout)
 
         # Controller selection
         controller_layout = QHBoxLayout()
@@ -72,7 +85,7 @@ class LunarLanderGUI(QMainWindow):
         fuel_label = QLabel("Fuel Limit:")
         fuel_label.setStyleSheet("font-size: 12pt; font-weight: bold;")
         self.fuel_entry = QLineEdit()
-        self.fuel_entry.setText("200")
+        self.fuel_entry.setText("500")
         fuel_layout.addWidget(fuel_label)
         fuel_layout.addWidget(self.fuel_entry)
         input_layout.addLayout(fuel_layout)
@@ -99,19 +112,32 @@ class LunarLanderGUI(QMainWindow):
         self.exit_button.clicked.connect(self.close)
         layout.addWidget(self.exit_button)
 
+        self.toggle_custom_inputs()
+
+    def toggle_custom_inputs(self):
+        is_custom = self.env_choice.currentText() == "Custom"
+        self.gravity_entry.setVisible(is_custom)
+        self.wind_entry.setVisible(is_custom)
+        self.malfunction_check.setVisible(is_custom)
+        self.fuel_entry.setVisible(is_custom)
+
     def run_test(self):
         self.running = True
         controller = self.controller_choice.currentText()
-        gravity = (0, float(self.gravity_entry.text()))
-        wind_power = float(self.wind_entry.text())
-        enable_malfunction = self.malfunction_check.isChecked()
-        fuel_limit = float(self.fuel_entry.text())
         num_iterations = self.iterations_entry.value()
 
-        env = LunarLanderEnvWrapper(gravity=gravity,
-                                    enable_wind=True, wind_power=wind_power,
-                                    enable_fuel=True, fuel_limit=fuel_limit,
-                                    enable_malfunction=enable_malfunction, render=True)
+        if self.env_choice.currentText() == "Custom":
+            gravity = (0, float(self.gravity_entry.text())) if self.gravity_entry.text() else (0, -10)
+            wind_power = float(self.wind_entry.text()) if self.wind_entry.text() else 0
+            enable_malfunction = self.malfunction_check.isChecked()
+            fuel_limit = float(self.fuel_entry.text()) if self.fuel_entry.text() else 500
+
+            env = LunarLanderEnvWrapper(gravity=gravity,
+                                        enable_wind=True, wind_power=wind_power,
+                                        enable_fuel=True, fuel_limit=fuel_limit,
+                                        enable_malfunction=enable_malfunction, render=True)
+        else:
+            env = gym.make('LunarLander-v2', render_mode='human')
 
         if controller == "PID":
             pid_controller = LunarLanderPIDController(env)
@@ -120,8 +146,8 @@ class LunarLanderGUI(QMainWindow):
             state_dim = env.observation_space.shape[0]
             action_dim = env.action_space.n
             agent = DQNAgent(state_dim, action_dim, env.action_space)
-            agent.load_model('classic.pth')
-            agent.run(env, num_iterations, stop_event=None)
+            agent.load_model('dqn_lunarlander_classic.pth')
+            agent.run(env, num_episodes=num_iterations)
 
         self.running = False
 
@@ -132,11 +158,13 @@ class LunarLanderGUI(QMainWindow):
         else:
             event.accept()
 
+
 def main():
     app = QApplication([])
     window = LunarLanderGUI()
     window.show()
     app.exec_()
+
 
 if __name__ == "__main__":
     main()
