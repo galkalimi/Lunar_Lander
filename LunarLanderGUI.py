@@ -120,7 +120,7 @@ class LunarLanderGUI(QMainWindow):
             state_dim = env.observation_space.shape[0]
             action_dim = env.action_space.n
             agent = DQNAgent(state_dim, action_dim, env.action_space)
-            agent.load_model('dqn_lunarlander_classic.pth')
+            agent.load_model('classic.pth')
             agent.run(env, num_iterations, stop_event=None)
 
         self.running = False
