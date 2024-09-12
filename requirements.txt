@@ -1,0 +1,39 @@
+ale-py==0.8.1
+box2d-py==2.3.5
+cffi==1.17.0
+cloudpickle @ file:///home/conda/feedstock_root/build_artifacts/cloudpickle_1697464713350/work
+contourpy==1.3.0
+cycler==0.12.1
+Cython==3.0.11
+Farama-Notifications==0.0.4
+fasteners==0.19
+filelock==3.15.4
+fonttools==4.53.1
+fsspec==2024.6.1
+glfw==2.7.0
+gym @ file:///D:/bld/gym_1673322362287/work
+gym-notices @ file:///home/conda/feedstock_root/build_artifacts/gym-notices_1671541680412/work
+gymnasium==0.29.1
+imageio==2.35.1
+importlib_metadata @ file:///home/conda/feedstock_root/build_artifacts/importlib-metadata_1724187233579/work
+importlib_resources==6.4.4
+Jinja2==3.1.4
+kiwisolver==1.4.5
+MarkupSafe==2.1.5
+matplotlib==3.9.2
+mpmath==1.3.0
+mujoco-py==2.1.2.14
+networkx==3.2.1
+numpy @ file:///D:/bld/numpy_1707225561314/work/dist/numpy-1.26.4-cp39-cp39-win_amd64.whl#sha256=af5f40857bb7ceb2d3be562fa763863d2f954c104873e89b8ee370f75e047ecf
+packaging==24.1
+pillow==10.4.0
+pycparser==2.22
+pygame==2.6.0
+pyparsing==3.1.4
+python-dateutil==2.9.0.post0
+six==1.16.0
+swig==4.2.1
+sympy==1.13.2
+torch==2.4.0
+typing_extensions==4.12.2
+zipp @ file:///home/conda/feedstock_root/build_artifacts/zipp_1723591248676/work

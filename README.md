@@ -2,76 +2,65 @@
 
 ## Overview
 
-This project implements a Lunar Lander simulation environment with two controllers: a PID controller and a Deep Q-Network (DQN) agent. The user can interact with the environment using a graphical user interface (GUI) to adjust various simulation parameters such as gravity, wind power, and fuel limits. The primary goal is to land the lunar lander safely on the surface using one of the trained models.
+The Lunar Lander Project simulates a lunar landing mission with two control strategies: a PID controller and a Deep Q-Network (DQN) agent. The project includes a graphical user interface (GUI) for adjusting simulation parameters such as gravity, wind power, and fuel limits. The goal is to safely land the lunar lander using the selected control strategy.
 
 ## Features
 
-- **PID and DQN Controllers**: Control the lunar lander using a PID controller or a trained DQN agent.
-- **Adjustable Environment Parameters**: Modify settings like gravity, wind power, fuel limit, and malfunction settings through an intuitive GUI.
-- **Simulation Visualization**: Visual feedback of the lunar lander's movements in the environment.
-- **Threaded Execution**: Run simulations on a separate thread to keep the GUI responsive.
+- **PID and DQN Controllers**: Test and compare the performance of a PID controller and a trained DQN agent for lunar landing.
+- **Customizable Environment Parameters**: Fine-tune settings like gravity, wind power, fuel limits, and malfunctions through an intuitive GUI.
+- **Simulation Visualization**: Real-time graphical feedback on the lunar lander's behavior and performance.
+- **Threaded Execution**: Smooth simulation execution with a responsive GUI.
 
 ## GUI Functionality
 
-The GUI allows the user to:
+The GUI provides the following features:
 
 - **Controller Selection**: Choose between PID and DQN controllers.
-- **Adjust Environment Parameters**:
-  - **Gravity**: Adjust the gravity to test the robustness of the controllers.
-  - **Wind Power**: Modify wind conditions to add randomness to the simulation.
-  - **Fuel Limit**: Set a fuel constraint to challenge the controller's efficiency.
-  - **Malfunction**: Enable or disable random malfunctions during the simulation.
-  - **Number of Iterations**: Specify how many simulation runs to perform.
-- **Run and Exit Buttons**: Start the simulation with the chosen settings or exit the application.
+- **Environment Parameter Adjustment**:
+  - **Gravity**: Modify gravity to test controller performance under different conditions.
+  - **Wind Power**: Change wind conditions to introduce variability into the simulation.
+  - **Fuel Limit**: Set fuel constraints to challenge the controllers.
+  - **Malfunction**: Toggle random malfunctions to simulate real-world issues.
+  - **Number of Iterations**: Define the number of simulation runs.
+- **Run and Exit Buttons**: Start simulations or close the application.
 
 ## Installation
 
-To set up the project on your local machine, follow these steps:
+To set up the project locally:
 
 1. **Clone the Repository**:
     ```bash
-    git clone <repository-url>
-    cd lunar-lander-project
+    git clone https://github.com/YarinOhayon/Lunar_Lander.git
+    cd Lunar_Lander
     ```
 
 2. **Install Dependencies**:
-
-   Ensure Python is installed on your system. Install the required packages using pip:
+   Ensure Python is installed, then install the required packages:
     ```bash
     pip install -r requirements.txt
     ```
 
 3. **Run the Application**:
-
-   To launch the GUI and start interacting with the lunar lander environment, run:
+   Launch the GUI by executing:
     ```bash
-    python main.py
+    python LunarLanderGUI.py
     ```
 
 ## Usage
 
-1. **Choose a Controller**: Select either PID or DQN from the dropdown menu.
-2. **Adjust Parameters**: Set the values for gravity, wind power, fuel limits, and enable or disable malfunctions.
-3. **Run the Simulation**: Click the "Run" button to start the simulation with the specified settings.
-4. **Exit**: Click the "Exit" button to close the application.
+1. **Select a Controller**: Choose PID or DQN from the GUI dropdown menu.
+2. **Set Parameters**: Adjust gravity, wind power, fuel limits, and malfunctions as needed.
+3. **Start the Simulation**: Click "Run" to begin the simulation with the selected parameters.
+4. **Close the Application**: Click "Exit" to terminate the application.
 
 ## Code Structure
 
-- **`LunarLanderGUI.py`**: Contains the GUI implementation using Tkinter for user interactions.
-- **`LunarLanderEnvWrapper.py`**: Wraps the Lunar Lander environment to integrate adjustable parameters.
-- **`DQNAgent.py`**: Implements the DQN agent used to control the lunar lander.
-- **`LunarLanderPIDController.py`**: Implements the PID controller used to control the lunar lander.
-
-## Future Enhancements
-
-- Implement malfunction handling within the controllers to simulate real-world unpredictability.
-- Add more advanced reinforcement learning algorithms.
-- Improve visualization with more detailed feedback on each simulation run.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contact
-
-For questions or collaboration, please contact [Your Name] at [Your Email].
+- **`LunarLanderGUI.py`**: Implements the GUI using Tkinter for user interactions, allowing users to select controllers and adjust simulation parameters.
+- **`LunarLanderEnvWrapper.py`**: Wraps the Lunar Lander environment to integrate and manage adjustable parameters like gravity and wind.
+- **`DQNAgent.py`**: Contains the implementation of the Deep Q-Network (DQN) agent used to control the lunar lander and make decisions based on the environment state.
+- **`LunarLanderPIDController.py`**: Implements the Proportional-Integral-Derivative (PID) controller for managing the lunar lander’s descent.
+- **`DQN.py`**: Defines the architecture of the Deep Q-Network (DQN) using PyTorch, including fully connected layers and dropout for reinforcement learning tasks.
+- **`PIDController.py`**: Implements a basic PID controller to calculate control outputs based on setpoint and measurement, with methods for computing control actions.
+- **`ReplayBuffer.py`**: Provides a replay buffer for storing transitions and sampling mini-batches for training the DQN agent.
+- **`requirements.txt`**: Lists the Python packages required to run the project.
+- **`README.md`**: Documentation file describing the project, installation, usage, and other relevant information.
