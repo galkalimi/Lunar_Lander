@@ -1,4 +1,5 @@
 import gymnasium as gym
+import random
 
 class LunarLanderEnvWrapper(gym.Env):
     """
@@ -32,7 +33,10 @@ class LunarLanderEnvWrapper(gym.Env):
         next_state, reward, done, truncated, info = env.step(action)
     """
 
-    def __init__(self, gravity=(0,-10), enable_wind=False, wind_power=15.0):
+    def __init__(self, gravity=(0,-10),
+                enable_wind=False, wind_power=15.0,
+                enable_fuel=False, fuel_limit=100,
+                enable_malfunction=False, render=False):
         """
         Initializes the LunarLanderEnvWrapper with custom gravity and wind settings.
 
@@ -42,7 +46,10 @@ class LunarLanderEnvWrapper(gym.Env):
             wind_power (float, optional): The strength of the wind if enabled. Defaults to 15.0.
         """
         super(LunarLanderEnvWrapper, self).__init__()
-        self.env = gym.make('LunarLander-v2', enable_wind=enable_wind, wind_power=wind_power)  # Base environment
+        render_mode = 'human' if render else None
+        self.env = gym.make('LunarLander-v2',
+                            enable_wind=enable_wind, wind_power=wind_power,
+                            render_mode=render_mode)  # Base environment
         self.state = None
         
         # Set custom gravity
@@ -50,6 +57,16 @@ class LunarLanderEnvWrapper(gym.Env):
         self.env.unwrapped.world.gravity = self.gravity
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space
+        
+        # Set custom fuel
+        self.enable_fuel = enable_fuel
+        self.fuel_limit = fuel_limit  # Maximum fuel amount
+        self.current_fuel = self.fuel_limit
+        self.prev_fuel = self.fuel_limit
+        self.fuel_consumption_rate = 1  # Amount of fuel consumed per thrust action
+
+        self.enable_malfunction = enable_malfunction
+        self.malfunction_probability = 0.1
 
     def reset(self):
         """
@@ -59,6 +76,7 @@ class LunarLanderEnvWrapper(gym.Env):
             tuple: The initial state and additional information.
         """
         self.state, info = self.env.reset()
+        self.current_fuel = self.fuel_limit
         return self.state, info
 
     def step(self, action):
@@ -71,6 +89,21 @@ class LunarLanderEnvWrapper(gym.Env):
         Returns:
             tuple: The next state, reward, done flag, truncated flag, and additional info.
         """
+        # Check if there is a malfunction
+        if self.enable_malfunction and random.random() < self.malfunction_probability:
+            # Malfunction occurs
+            action = 0  # Force 'do nothing' action
+            next_state, reward, done, truncated, info = self.env.step(action)
+            return next_state, reward, done, truncated, info
+
+        # if we are in fuel limitation env, check if there is enough fuel    
+        if self.enable_fuel:
+            if action in [1, 2, 3] and self.current_fuel >= self.fuel_consumption_rate:
+                self.prev_fuel = self.current_fuel
+                self.current_fuel -= self.fuel_consumption_rate
+            elif action in [1, 2, 3] and self.current_fuel < self.fuel_consumption_rate:
+                action = 0
+
         next_state, reward, done, truncated, info = self.env.step(action)
         return next_state, reward, done, truncated, info
 

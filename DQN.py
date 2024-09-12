@@ -25,7 +25,7 @@ class DQN(nn.Module):
         output = model(torch.tensor([state], dtype=torch.float32))
     """
 
-    def __init__(self, state_dim, action_dim):
+    def __init__(self, state_dim, action_dim, dropout_prob=0):
         """
         Initializes the DQN model with specified input (state) and output (action) dimensions.
 
@@ -37,6 +37,7 @@ class DQN(nn.Module):
         self.fc1 = nn.Linear(state_dim, 256)  # Increased number of neurons
         self.fc2 = nn.Linear(256, 256)  # Increased number of neurons
         self.fc3 = nn.Linear(256, 128)  # Additional layer
+        self.dropout = nn.Dropout(dropout_prob)  # Dropout layer
         self.fc4 = nn.Linear(128, action_dim)  # Additional layer
 
     def forward(self, x):

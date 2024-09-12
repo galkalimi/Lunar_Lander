@@ -40,9 +40,6 @@ class LunarLanderPIDController:
         self.vertical_pid = PIDController(Kp=0.2, Ki=0.0, Kd=0.7, setpoint=0)  
         self.horizontal_pid = PIDController(Kp=0.2, Ki=0.0, Kd=0.7, setpoint=0)  
         self.angle_pid = PIDController(Kp=0.2, Ki=0.0, Kd=0.6, setpoint=0) 
-        self.vertical_pid = PIDController(Kp=0.2, Ki=0.0, Kd=0.7, setpoint=0)  
-        self.horizontal_pid = PIDController(Kp=0.2, Ki=0.0, Kd=0.7, setpoint=0)  
-        self.angle_pid = PIDController(Kp=0.2, Ki=0.0, Kd=0.6, setpoint=0) 
 
     def select_action(self, state):
         """
@@ -79,7 +76,7 @@ class LunarLanderPIDController:
 
         return action
 
-    def run(self):
+    def run(self, stop_event=None, num_iterations=100):
         """
         Runs multiple episodes of the environment with the PID controller and tracks performance.
 
@@ -90,8 +87,9 @@ class LunarLanderPIDController:
         Returns:
             None
         """
-        total_scores = []
-        for i in range(5000):  # Run multiple episodes
+        for episode in range(num_iterations):  # Run multiple episodes
+            if stop_event and stop_event.is_set():
+                break
             state, _ = self.env.reset()
             done = False
             episode_reward = 0  # Track total reward for the episode
@@ -100,12 +98,11 @@ class LunarLanderPIDController:
                 action = self.select_action(state)
                 state, reward, done, truncated, info = self.env.step(action)
                 self.env.render()
-                # time.sleep(0.02)  # Slow down rendering to make it visible
-                episode_reward += reward  # Accumulate reward
 
-            total_scores.append(episode_reward)  # Store the total reward for this episode
-            print(f'Episode {i+1} Total Reward: {episode_reward}')
-    
+                 # Collecting error data for plotting
+                x, y, vx, vy, theta, omega, left_leg_contact, right_leg_contact = state
+                error_vy = self.vertical_pid.setpoint - vy
+                error_vx = self.horizontal_pid.setpoint - vx
+                error_theta = self.angle_pid.setpoint - theta
+                   
         self.env.close()
-        average_score = sum(total_scores) / len(total_scores)
-        print(f'Average Reward over {len(total_scores)} episodes: {average_score}')
