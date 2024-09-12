@@ -22,11 +22,11 @@ The GUI provides the following features:
     - **Fuel Limit**: Set fuel constraints to challenge the controllers.
     - **Malfunction**: Toggle random malfunctions to simulate real-world issues.
 - **Controller Selection**:
-- Choose between PID and DQN controllers.
+  Choose between PID and DQN controllers.
 - **Number of Iterations**:
-- Define the number of simulation runs.
+  Define the number of simulation runs.
 - **Run and Exit Buttons**:
-- Start simulations or close the application.
+  Start simulations or close the application.
 
 ## Installation
 
