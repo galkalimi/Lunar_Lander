@@ -10,7 +10,6 @@ The Lunar Lander Project simulates a lunar landing mission with two control stra
 - **PID and DQN Controllers**: Test and compare the performance of a PID controller and a trained DQN agent for lunar landing.
 - **Customizable Environment Parameters**: Fine-tune settings like gravity, wind power, fuel limits, and malfunctions through an intuitive GUI.
 - **Simulation Visualization**: Real-time graphical feedback on the lunar lander's behavior and performance.
-- **Threaded Execution**: Smooth simulation execution with a responsive GUI.
 
 ## GUI Functionality
 
