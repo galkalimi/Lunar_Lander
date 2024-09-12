@@ -81,7 +81,6 @@ class LunarLanderPIDController:
         return action
 
     def run(self, stop_event=None, num_iterations=100):
-    def run(self, stop_event=None, num_iterations=100):
         """
         Runs multiple episodes of the environment with the PID controller and tracks performance.
 
