@@ -246,6 +246,10 @@ def train_dqn(env, agent, num_episodes=5000 , update_target_every=10, max_steps_
 
         all_rewards.append(total_reward)  # Store total reward for this episode
 
+        # Update the target network
+        if episode % update_target_every == 0:
+            agent.target_net.load_state_dict(agent.policy_net.state_dict())
+
         # Plotting and saving figures
         if episode % 50 == 0:
             plt.figure(figsize=(15, 5))
@@ -483,7 +487,7 @@ def main():
 
     # Train the agent
     # print("Training the agent...")
-    # train_dqn(env_classic, agent)
+    train_dqn(env_classic, agent)
 
     # Load the trained model
     agent.load_model('dqn_lunarlander_classic.pth')  # this is the model trained on the classic environment

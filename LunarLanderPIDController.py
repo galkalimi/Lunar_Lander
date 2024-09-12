@@ -1,3 +1,7 @@
+
+import gymnasium as gym
+import time
+import matplotlib.pyplot as plt
 from PIDController import PIDController
 
 class LunarLanderPIDController:
@@ -77,6 +81,7 @@ class LunarLanderPIDController:
         return action
 
     def run(self, stop_event=None, num_iterations=100):
+    def run(self, stop_event=None, num_iterations=100):
         """
         Runs multiple episodes of the environment with the PID controller and tracks performance.
 
@@ -98,6 +103,13 @@ class LunarLanderPIDController:
                 action = self.select_action(state)
                 state, reward, done, truncated, info = self.env.step(action)
                 self.env.render()
+
+                 # Collecting error data for plotting
+                x, y, vx, vy, theta, omega, left_leg_contact, right_leg_contact = state
+                error_vy = self.vertical_pid.setpoint - vy
+                error_vx = self.horizontal_pid.setpoint - vx
+                error_theta = self.angle_pid.setpoint - theta
+                   
 
                  # Collecting error data for plotting
                 x, y, vx, vy, theta, omega, left_leg_contact, right_leg_contact = state
