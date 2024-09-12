@@ -92,8 +92,6 @@ class LunarLanderPIDController:
             None
         """
         for episode in range(num_iterations):  # Run multiple episodes
-            if stop_event and stop_event.is_set():
-                break
             state, _ = self.env.reset()
             done = False
             episode_reward = 0  # Track total reward for the episode

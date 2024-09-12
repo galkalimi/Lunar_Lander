@@ -1,185 +1,142 @@
-import tkinter as tk
-from tkinter import Canvas, ttk
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QLineEdit, QCheckBox, QPushButton, QSpinBox, QMessageBox
+from PyQt5.QtCore import Qt
 from LunarLanderEnvWrapper import LunarLanderEnvWrapper
 from DQNAgent import DQNAgent
 from LunarLanderPIDController import LunarLanderPIDController
-import threading
 
-class LunarLanderGUI:
-    """
-    A graphical user interface (GUI) for testing the Lunar Lander environment with
-    different control methods, such as PID and DQN. This GUI allows users to customize
-    environment parameters such as gravity, wind power, fuel limits, and malfunction settings,
-    and run simulations in a separate thread.
-    
-    Attributes:
-        root (Tk): The root window of the Tkinter GUI.
-        input_frame (Frame): Frame containing all user input controls.
-        controller_var (StringVar): Stores the controller choice (PID or DQN).
-        gravity_var (DoubleVar): Stores the gravity setting entered by the user.
-        wind_var (DoubleVar): Stores the wind power setting entered by the user.
-        malfunction_var (BooleanVar): Indicates whether the malfunction option is enabled.
-        fuel_var (DoubleVar): Stores the fuel limit entered by the user.
-        iterations_var (IntVar): Stores the number of iterations for the simulation.
-        test_thread (Thread): The thread running the simulation.
-        stop_event (Event): A threading event used to stop the simulation.
-    """
-    def __init__(self, root):
-        """
-        Initializes the LunarLanderGUI class with a Tkinter root window, sets up the layout, 
-        input controls, and buttons, and configures styles for a dark-themed interface.
+class LunarLanderGUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Lunar Lander Test Environment")
+        self.setStyleSheet("background-color: #000000; color: #FFFFFF;")
+        self.running = False
 
-        Args:
-            root (Tk): The root Tkinter window.
-        """
-        # Initialize the main window and set its title and background color.
-        self.root = root
-        self.root.title("Lunar Lander Test Environment")
-        self.root.configure(bg="#000000")  # Black background
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout(central_widget)
 
-        # Style configurations for dark-themed UI elements.
-        style = ttk.Style()
-        style.configure("DarkFrame.TFrame", background="#2c2c2c", borderwidth=1, relief="solid")
-        style.configure("TLabel", foreground="#FFFFFF", background="#000000")  # White text
-        style.configure("TEntry", fieldbackground="#4a4a4a", foreground="#000000")  # Gray background for entry, black text
-        style.configure("TCheckbutton", foreground="#FFFFFF", background="#000000")  # White text for checkboxes
+        title_label = QLabel("Lunar Lander Test Environment")
+        title_label.setStyleSheet("font-size: 18pt; font-weight: bold;")
+        title_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_label)
 
-        # Title label with white color and large font.
-        title_label = ttk.Label(self.root, text="Lunar Lander Test Environment", font=("Helvetica", 18, "bold"),
-                                foreground="#FFFFFF", background="#000000")  # White for title text
-        title_label.grid(row=0, column=0, columnspan=2, pady=20)
+        input_frame = QWidget()
+        input_layout = QVBoxLayout(input_frame)
+        input_frame.setStyleSheet("background-color: #2c2c2c; border: 1px solid #FFFFFF;")
+        layout.addWidget(input_frame)
 
-        # Frame for input controls with a modern dark gray border.
-        self.input_frame = ttk.Frame(self.root, padding="10", style="DarkFrame.TFrame")
-        self.input_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
+        # Controller selection
+        controller_layout = QHBoxLayout()
+        controller_label = QLabel("Choose Controller:")
+        controller_label.setStyleSheet("font-size: 12pt; font-weight: bold;")
+        self.controller_choice = QComboBox()
+        self.controller_choice.addItems(["PID", "DQN"])
+        self.controller_choice.setCurrentText("DQN")
+        controller_layout.addWidget(controller_label)
+        controller_layout.addWidget(self.controller_choice)
+        input_layout.addLayout(controller_layout)
 
-        # Controller selection (PID or DQN).
-        ttk.Label(self.input_frame, text="Choose Controller:", font=("Helvetica", 12, "bold")).grid(
-            row=1, column=0, padx=10, pady=5, sticky="w")
-        self.controller_var = tk.StringVar()
-        self.controller_choice = ttk.Combobox(self.input_frame, textvariable=self.controller_var, values=["PID", "DQN"])
-        self.controller_choice.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
-        self.controller_choice.set("DQN")
+        # Gravity setting input
+        gravity_layout = QHBoxLayout()
+        gravity_label = QLabel("Gravity:")
+        gravity_label.setStyleSheet("font-size: 12pt; font-weight: bold;")
+        self.gravity_entry = QLineEdit()
+        self.gravity_entry.setText("-10")
+        gravity_layout.addWidget(gravity_label)
+        gravity_layout.addWidget(self.gravity_entry)
+        input_layout.addLayout(gravity_layout)
 
-        # Gravity setting input.
-        ttk.Label(self.input_frame, text="Gravity:", font=("Helvetica", 12, "bold")).grid(
-            row=2, column=0, padx=10, pady=5, sticky="w")
-        self.gravity_var = tk.DoubleVar()
-        self.gravity_entry = ttk.Entry(self.input_frame, textvariable=self.gravity_var)
-        self.gravity_entry.grid(row=2, column=1, padx=10, pady=5, sticky="ew")
-        self.gravity_var.set(-10)
+        # Wind power setting input
+        wind_layout = QHBoxLayout()
+        wind_label = QLabel("Wind Power:")
+        wind_label.setStyleSheet("font-size: 12pt; font-weight: bold;")
+        self.wind_entry = QLineEdit()
+        self.wind_entry.setText("0")
+        wind_layout.addWidget(wind_label)
+        wind_layout.addWidget(self.wind_entry)
+        input_layout.addLayout(wind_layout)
 
-        # Wind power setting input.
-        ttk.Label(self.input_frame, text="Wind Power:", font=("Helvetica", 12, "bold")).grid(
-            row=3, column=0, padx=10, pady=5, sticky="w")
-        self.wind_var = tk.DoubleVar()
-        self.wind_entry = ttk.Entry(self.input_frame, textvariable=self.wind_var)
-        self.wind_entry.grid(row=3, column=1, padx=10, pady=5, sticky="ew")
-        self.wind_var.set(0)
+        # Malfunction checkbox
+        malfunction_layout = QHBoxLayout()
+        malfunction_label = QLabel("Enable Malfunction:")
+        malfunction_label.setStyleSheet("font-size: 12pt; font-weight: bold;")
+        self.malfunction_check = QCheckBox()
+        malfunction_layout.addWidget(malfunction_label)
+        malfunction_layout.addStretch()
+        malfunction_layout.addWidget(self.malfunction_check)
+        malfunction_layout.addStretch()
+        input_layout.addLayout(malfunction_layout)
 
+        # Fuel limit input
+        fuel_layout = QHBoxLayout()
+        fuel_label = QLabel("Fuel Limit:")
+        fuel_label.setStyleSheet("font-size: 12pt; font-weight: bold;")
+        self.fuel_entry = QLineEdit()
+        self.fuel_entry.setText("200")
+        fuel_layout.addWidget(fuel_label)
+        fuel_layout.addWidget(self.fuel_entry)
+        input_layout.addLayout(fuel_layout)
 
-        # Malfunction checkbox to enable or disable malfunctions.
-        ttk.Label(self.input_frame, text="Enable Malfunction:", font=("Helvetica", 12, "bold")).grid(
-            row=4, column=0, padx=10, pady=5, sticky="w")
-        malfunction_check_frame = ttk.Frame(self.input_frame, style="DarkFrame.TFrame", borderwidth=0, relief='flat')
-        malfunction_check_frame.grid(row=4, column=1, padx=10, pady=5, sticky="nsew")
-        malfunction_check_frame.grid_columnconfigure(0, weight=1)
-        self.malfunction_var = tk.BooleanVar()
-        style.configure("CenteredCheck.TCheckbutton", background="#2c2c2c", foreground="#FFFFFF")  # Dark gray background, white text
-        self.malfunction_check = ttk.Checkbutton(malfunction_check_frame, variable=self.malfunction_var, style="CenteredCheck.TCheckbutton")
-        self.malfunction_check.grid(row=0, column=0, padx=0, pady=0, sticky="")
+        # Number of iterations input
+        iterations_layout = QHBoxLayout()
+        iterations_label = QLabel("Number of Iterations:")
+        iterations_label.setStyleSheet("font-size: 12pt; font-weight: bold;")
+        self.iterations_entry = QSpinBox()
+        self.iterations_entry.setValue(1)
+        iterations_layout.addWidget(iterations_label)
+        iterations_layout.addWidget(self.iterations_entry)
+        input_layout.addLayout(iterations_layout)
 
-        # Fuel limit input.
-        ttk.Label(self.input_frame, text="Fuel Limit:", font=("Helvetica", 12, "bold")).grid(
-            row=5, column=0, padx=10, pady=5, sticky="w")
-        self.fuel_var = tk.DoubleVar()
-        self.fuel_entry = ttk.Entry(self.input_frame, textvariable=self.fuel_var)
-        self.fuel_entry.grid(row=5, column=1, padx=10, pady=5, sticky="ew")
-        self.fuel_var.set(200)
+        # Run button
+        self.run_button = QPushButton("Run")
+        self.run_button.setStyleSheet("background-color: #FFD700; font-size: 14pt; font-weight: bold; color: #000000;")
+        self.run_button.clicked.connect(self.run_test)
+        layout.addWidget(self.run_button)
 
-        # Number of iterations input.
-        ttk.Label(self.input_frame, text="Number of Iterations:", font=("Helvetica", 12, "bold")).grid(
-            row=6, column=0, padx=10, pady=5, sticky="w")
-        self.iterations_var = tk.IntVar()
-        self.iterations_entry = ttk.Entry(self.input_frame, textvariable=self.iterations_var)
-        self.iterations_entry.grid(row=6, column=1, padx=10, pady=5, sticky="ew")
-        self.iterations_var.set(1)
-
-        # Run button to start the simulation.
-        self.run_button = tk.Button(self.root, text="Run", command=self.start_test_thread,
-                                    bg="#FFD700", font=("Helvetica", 14, "bold"), relief="ridge", bd=4, fg="#000000")  # Yellow with black text
-        self.run_button.grid(row=7, column=0, columnspan=2, pady=15, padx=20, sticky="ew")
-
-        # Exit button to close the application.
-        self.exit_button = tk.Button(self.root, text="Exit", command=self.on_exit,
-                                     bg="#8A2BE2", font=("Helvetica", 14, "bold"), relief="ridge", bd=4, fg="#FFFFFF")  # Purple with white text
-        self.exit_button.grid(row=8, column=0, columnspan=2, pady=10, padx=20, sticky="ew")
-
-        # Manage threading for simulations.
-        self.test_thread = None
-        self.stop_event = threading.Event()
-
-    def start_test_thread(self):
-        """
-        Starts a new thread to run the simulation. If a previous thread is running, 
-        it attempts to stop it before starting a new one.
-        """
-        if self.test_thread and self.test_thread.is_alive():
-            # Optionally handle stopping or interrupting the thread if needed.
-            self.stop_event.set()
-        self.stop_event.clear()
-        self.test_thread = threading.Thread(target=self.run_test)
-        self.test_thread.start()
+        # Exit button
+        self.exit_button = QPushButton("Exit")
+        self.exit_button.setStyleSheet("background-color: #8A2BE2; font-size: 14pt; font-weight: bold; color: #FFFFFF;")
+        self.exit_button.clicked.connect(self.close)
+        layout.addWidget(self.exit_button)
 
     def run_test(self):
-        """
-        Runs the Lunar Lander simulation based on user-selected settings. This includes
-        initializing the environment with gravity, wind, fuel, and malfunction settings,
-        and then running the chosen controller (PID or DQN) for the specified number of iterations.
+        self.running = True
+        controller = self.controller_choice.currentText()
+        gravity = (0, float(self.gravity_entry.text()))
+        wind_power = float(self.wind_entry.text())
+        enable_malfunction = self.malfunction_check.isChecked()
+        fuel_limit = float(self.fuel_entry.text())
+        num_iterations = self.iterations_entry.value()
 
-        Note: The simulation runs in a separate thread.
-        """
-        # Retrieve user choices.
-        controller = self.controller_var.get()
-        gravity = (0, self.gravity_var.get())
-        wind_power = self.wind_var.get()
-        enable_malfunction = self.malfunction_var.get()
-        fuel_limit = self.fuel_var.get()
-        num_iterations = self.iterations_var.get()
-
-        # Initialize the environment with the selected settings.
         env = LunarLanderEnvWrapper(gravity=gravity,
                                     enable_wind=True, wind_power=wind_power,
                                     enable_fuel=True, fuel_limit=fuel_limit,
                                     enable_malfunction=enable_malfunction, render=True)
-        
-        # Run the simulation with the PID controller or the DQN agent.
+
         if controller == "PID":
             pid_controller = LunarLanderPIDController(env)
-            pid_controller.run(self.stop_event, num_iterations)  # Pass stop_event to PID Controller
+            pid_controller.run(num_iterations=num_iterations)
         else:
-            # For DQN agent.
             state_dim = env.observation_space.shape[0]
             action_dim = env.action_space.n
             agent = DQNAgent(state_dim, action_dim, env.action_space)
             agent.load_model('dqn_lunarlander_classic.pth')
-            agent.run(env, num_iterations, self.stop_event)
+            agent.run(env, num_iterations, stop_event=None)
 
+        self.running = False
 
-    def on_exit(self):
-        """
-        Closes the application gracefully by stopping any ongoing simulations
-        and terminating the root window.
-        """
-        if self.test_thread and self.test_thread.is_alive():
-            self.stop_event.set()    # Set the event to stop the thread.
-            self.test_thread.join()  # Wait for the test thread to finish
-        self.root.quit()  # Exit the Tkinter main loop
+    def closeEvent(self, event):
+        if self.running:
+            QMessageBox.warning(self, "Warning", "Simulation is running. Please wait until it finishes.")
+            event.ignore()
+        else:
+            event.accept()
 
 def main():
-    root = tk.Tk()
-    app = LunarLanderGUI(root)
-    root.mainloop()
+    app = QApplication([])
+    window = LunarLanderGUI()
+    window.show()
+    app.exec_()
 
 if __name__ == "__main__":
     main()

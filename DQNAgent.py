@@ -172,9 +172,7 @@ class DQNAgent:
             # Reset environment
             state, info = env.reset()
             done = False
-            if stop_event and stop_event.is_set():
-                break
-
+            
             while not done or truncated:
                 action = self.select_action(state)
                 next_state, reward, done, truncated, info = env.step(action)
