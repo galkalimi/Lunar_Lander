@@ -129,11 +129,11 @@ class LunarLanderGUI(QMainWindow):
         if self.env_choice.currentText() == "Custom":
             gravity = (0, float(self.gravity_entry.text())) if self.gravity_entry.text() else (0, -10)
             wind_power = float(self.wind_entry.text()) if self.wind_entry.text() else 0
+            enable_wind = wind_power > 0
             enable_malfunction = self.malfunction_check.isChecked()
             fuel_limit = float(self.fuel_entry.text()) if self.fuel_entry.text() else 500
-
             env = LunarLanderEnvWrapper(gravity=gravity,
-                                        enable_wind=True, wind_power=wind_power,
+                                        enable_wind=enable_wind, wind_power=wind_power,
                                         enable_fuel=True, fuel_limit=fuel_limit,
                                         enable_malfunction=enable_malfunction, render=True)
         else:
