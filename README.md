@@ -53,12 +53,27 @@ To set up the project locally:
     python LunarLanderGUI.py
     ```
 
-## Usage
+### Usage
 
-1. **Select a Controller**: Choose PID or DQN from the GUI dropdown menu.
-2. **Set Parameters**: Adjust gravity, wind power, fuel limits, and malfunctions as needed.
-3. **Start the Simulation**: Click "Run" to begin the simulation with the selected parameters.
-4. **Close the Application**: Click "Exit" to terminate the application.
+1. **Select an Environment**:  
+   Choose between a **Custom** or **Original** environment.
+   - If you select **Custom**, you'll be able to adjust specific parameters (gravity, wind power, etc.).
+
+2. **Select a Controller**:  
+   Choose between **PID** or **DQN** from the dropdown menu in the GUI.
+
+3. **Set Parameters (Custom Environment)**:  
+   If you selected the **Custom** environment, adjust the following parameters as needed:
+   - **Gravity**: Modify the gravity level.
+   - **Wind Power**: Introduce or adjust wind conditions.
+   - **Fuel Limit**: Set limits on available fuel.
+   - **Malfunctions**: Toggle random malfunctions on or off.
+
+4. **Start the Simulation**:  
+   Click the **Run** button to begin the simulation with the selected environment, controller, and parameters.
+
+5. **Close the Application**:  
+   Click the **Exit** button to terminate the application.
 
 ## Code Structure
 
