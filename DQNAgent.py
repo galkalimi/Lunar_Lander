@@ -50,23 +50,11 @@ class DQNAgent:
     """
 
     def __init__(self, state_dim, action_dim, action_space, batch_size=64, gamma=0.99, epsilon=1.0, epsilon_min=0.01,
-                 epsilon_decay=0.995, lr=0.001, memory_capacity=10000):
+                 epsilon_decay=0.995, lr=0.001, memory_capacity=10000, dropout_prob=0):
         """
           Initializes the DQN agent with the specified parameters.
-
-          Args:
-              state_dim (int): The dimensionality of the state space.
-              action_dim (int): The dimensionality of the action space.
-              action_space (gym.Space): The action space of the environment.
-              batch_size (int, optional): Number of transitions to sample from replay buffer. Defaults to 64.
-              gamma (float, optional): Discount factor for future rewards. Defaults to 0.99.
-              epsilon (float, optional): Initial exploration rate. Defaults to 1.0.
-              epsilon_min (float, optional): Minimum exploration rate. Defaults to 0.01.
-              epsilon_decay (float, optional): Decay rate for epsilon. Defaults to 0.995.
-              lr (float, optional): Learning rate for the optimizer. Defaults to 0.001.
-              memory_capacity (int, optional): Capacity of the replay buffer. Defaults to 10000.
-              dropout_prob (float, optional): Dropout probability in the DQN model. Defaults to 0.
-          """
+        """
+        
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.action_space = action_space
@@ -78,8 +66,8 @@ class DQNAgent:
         self.lr = lr
 
         self.memory = ReplayBuffer(memory_capacity)
-        self.policy_net = DQN(state_dim, action_dim)
-        self.target_net = DQN(state_dim, action_dim)
+        self.policy_net = DQN(state_dim, action_dim, dropout_prob=dropout_prob)
+        self.target_net = DQN(state_dim, action_dim, dropout_prob=dropout_prob)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
 
@@ -116,33 +104,33 @@ class DQNAgent:
         if len(self.memory) < self.batch_size:
             return
 
-            # Sample a batch of transitions from the replay buffer
-            transitions = self.memory.sample(self.batch_size)
+        # Sample a batch of transitions from the replay buffer
+        transitions = self.memory.sample(self.batch_size)
 
-            # Unpack the batch into separate tensors
-            batch = list(zip(*transitions))
-            states = torch.stack(batch[0])
-            actions = torch.stack(batch[1])
-            rewards = torch.stack(batch[2])
-            next_states = torch.stack(batch[3])
-            dones = torch.stack(batch[4])
+        # Unpack the batch into separate tensors
+        batch = list(zip(*transitions))
+        states = torch.stack(batch[0])
+        actions = torch.stack(batch[1])
+        rewards = torch.stack(batch[2])
+        next_states = torch.stack(batch[3])
+        dones = torch.stack(batch[4])
 
-            # Compute the predicted Q-values for the current states
-            state_action_values = self.policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+        # Compute the predicted Q-values for the current states
+        state_action_values = self.policy_net(states).gather(1, actions.unsqueeze(1)).squeeze(1)
 
-            # Compute the target Q-values for the next states using the target network
-            next_state_values = self.target_net(next_states).max(1)[0]
+        # Compute the target Q-values for the next states using the target network
+        next_state_values = self.target_net(next_states).max(1)[0]
 
-            # Compute the expected Q-values for the current states
-            expected_state_action_values = rewards + (self.gamma * next_state_values * (1 - dones))
+        # Compute the expected Q-values for the current states
+        expected_state_action_values = rewards + (self.gamma * next_state_values * (1 - dones))
 
-            # Compute the loss between the predicted Q-values and the expected Q-values
-            loss = self.criterion(state_action_values, expected_state_action_values.detach())
+        # Compute the loss between the predicted Q-values and the expected Q-values
+        loss = self.criterion(state_action_values, expected_state_action_values.detach())
 
-            # Perform gradient descent to update the policy network
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+        # Perform gradient descent to update the policy network
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
     def save_model(self, path):
         """

@@ -69,5 +69,8 @@ To set up the project locally:
 - **`DQN.py`**: Defines the architecture of the Deep Q-Network (DQN) using PyTorch, including fully connected layers and dropout for reinforcement learning tasks.
 - **`PIDController.py`**: Implements a basic PID controller to calculate control outputs based on setpoint and measurement, with methods for computing control actions.
 - **`ReplayBuffer.py`**: Provides a replay buffer for storing transitions and sampling mini-batches for training the DQN agent.
+- **`TrainDQN.py`**: Contains the training function for the DQN model, which allows you to train the agent in the Lunar Lander environment and save the trained model.
+- **`Plots.py`**: Contains functions for plotting the performance of different models (PID, DQN) and environments (Classic, Fuel, Wind, Gravity, and Malfunction).
 - **`requirements.txt`**: Lists the Python packages required to run the project.
 - **`README.md`**: Documentation file describing the project, installation, usage, and other relevant information.
+

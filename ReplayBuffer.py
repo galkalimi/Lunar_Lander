@@ -22,11 +22,6 @@ class ReplayBuffer:
         
         __len__():
             Returns the current number of transitions stored in the buffer.
-
-    Example:
-        buffer = ReplayBuffer(capacity=10000)
-        buffer.push(transition)
-        batch = buffer.sample(batch_size=32)
     """
 
     def __init__(self, capacity):

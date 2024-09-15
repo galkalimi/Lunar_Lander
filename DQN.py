@@ -37,8 +37,8 @@ class DQN(nn.Module):
         self.fc1 = nn.Linear(state_dim, 256)  # Increased number of neurons
         self.fc2 = nn.Linear(256, 256)  # Increased number of neurons
         self.fc3 = nn.Linear(256, 128)  # Additional layer
-        self.dropout = nn.Dropout(dropout_prob)  # Dropout layer
         self.fc4 = nn.Linear(128, action_dim)  # Additional layer
+        self.dropout = nn.Dropout(dropout_prob)  # Dropout layer
 
     def forward(self, x):
         """
@@ -51,7 +51,9 @@ class DQN(nn.Module):
             torch.Tensor: The output Q-values for each action.
         """
         x = torch.relu(self.fc1(x))
+        x = self.dropout(x)
         x = torch.relu(self.fc2(x))
+        x = self.dropout(x)
         x = torch.relu(self.fc3(x))
         x = self.fc4(x)
         return x

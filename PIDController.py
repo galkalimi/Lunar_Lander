@@ -17,10 +17,6 @@ class PIDController:
     Methods:
         compute(measurement, dt):
             Computes the control output based on the current measurement and time step.
-    
-    Example:
-        pid = PIDController(Kp=1.0, Ki=0.1, Kd=0.05, setpoint=10)
-        output = pid.compute(measurement=8, dt=0.1)
     """
 
     def __init__(self, Kp, Ki, Kd, setpoint=0):

@@ -65,6 +65,7 @@ class LunarLanderEnvWrapper(gym.Env):
         self.prev_fuel = self.fuel_limit
         self.fuel_consumption_rate = 1  # Amount of fuel consumed per thrust action
 
+        # Set custom engine malfunction 
         self.enable_malfunction = enable_malfunction
         self.malfunction_probability = 0.1
 
