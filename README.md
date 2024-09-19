@@ -1,5 +1,5 @@
 # Lunar Lander Project
-![image](media\LunadLanderExample.png)
+![image](media/LunadLanderExample.png)
 
 ## Overview
 The Lunar Lander Project simulates a lunar landing mission with two control strategies: a PID controller and a Deep Q-Network (DQN) agent. The project includes a graphical user interface (GUI) for adjusting simulation parameters such as gravity, wind power, and fuel limits. The goal is to safely land the lunar lander using the selected control strategy.
