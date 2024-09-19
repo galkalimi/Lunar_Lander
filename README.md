@@ -5,18 +5,18 @@
 The Lunar Lander Project simulates a lunar landing mission with two control strategies: a PID controller and a Deep Q-Network (DQN) agent. The project includes a graphical user interface (GUI) for adjusting simulation parameters such as gravity, wind power, and fuel limits. The goal is to safely land the lunar lander using the selected control strategy.
 
 ## Project Documentation & Presentation
-For a more detailed description of the Lunar Lander Project, check out the [Project Overview PDF](media\Lunar_Lander.pdf).
+For a more detailed description of the Lunar Lander Project, check out the [Project Overview PDF](media/Lunar_Lander.pdf).
 You might also enjoy our short video presentation for a quick insight into the project: [Watch the Video](https://youtu.be/e_nDoMwvJ1A).
 
 ## Train Hard, Land Smooth
 
 ### DQN Training in Progress
-![DQN Training](media\LunarLanderTrainingGif.gif)
+![DQN Training](media/LunarLanderTrainingGif.gif)
 
 This GIF showcases the Deep Q-Network (DQN) learning to land the lunar lander. You can observe how the agent initially struggles.
 
 ### Successful DQN Landing
-![DQN Landing](media\LunarLanderSuccGif.gif)
+![DQN Landing](media/LunarLanderSuccGif.gif)
 
 In this GIF, the DQN agent successfully lands the lunar lander after completing its training. The smooth landing demonstrates the effectiveness of the trained DQN model in handling different conditions.
 
