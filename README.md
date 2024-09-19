@@ -1,9 +1,24 @@
 # Lunar Lander Project
-![image](https://github.com/user-attachments/assets/91c2c201-adf6-463b-b648-65fffed49520)
+![image](media\LunadLanderExample.png)
 
 ## Overview
-
 The Lunar Lander Project simulates a lunar landing mission with two control strategies: a PID controller and a Deep Q-Network (DQN) agent. The project includes a graphical user interface (GUI) for adjusting simulation parameters such as gravity, wind power, and fuel limits. The goal is to safely land the lunar lander using the selected control strategy.
+
+## Project Documentation & Presentation
+For a more detailed description of the Lunar Lander Project, check out the [Project Overview PDF](media\Lunar_Lander.pdf).
+You might also enjoy our short video presentation for a quick insight into the project: [Watch the Video](https://youtu.be/e_nDoMwvJ1A).
+
+## Train Hard, Land Smooth
+
+### DQN Training in Progress
+![DQN Training](media\LunarLanderTrainingGif.gif)
+
+This GIF showcases the Deep Q-Network (DQN) learning to land the lunar lander. You can observe how the agent initially struggles.
+
+### Successful DQN Landing
+![DQN Landing](media\LunarLanderSuccGif.gif)
+
+In this GIF, the DQN agent successfully lands the lunar lander after completing its training. The smooth landing demonstrates the effectiveness of the trained DQN model in handling different conditions.
 
 ## Features
 
@@ -12,6 +27,7 @@ The Lunar Lander Project simulates a lunar landing mission with two control stra
 - **Simulation Visualization**: Real-time graphical feedback on the lunar lander's behavior and performance.
 
 ## GUI Functionality
+![GUI window](GUI.jpg)
 
 The GUI provides the following features:
 - **Choose Environment**:
@@ -37,7 +53,7 @@ To set up the project locally:
 
 1. **Clone the Repository**:
     ```bash
-    git clone https://github.com/YarinOhayon/Lunar_Lander.git
+    git clone https://github.com/galkalimi/Lunar_Lander.git
     cd Lunar_Lander
     ```
 
@@ -54,6 +70,7 @@ To set up the project locally:
     ```
 
 ### Usage
+To begin using the Lunar Lander simulation, first launch the graphical user interface (GUI) by running the **`LunarLanderGUI.py`** file.
 
 1. **Select an Environment**:  
    Choose between a **Custom** or **Original** environment.
