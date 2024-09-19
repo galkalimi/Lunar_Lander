@@ -1,11 +1,12 @@
 # Lunar Lander Project
 <img src="media/LunadLanderExample.png" alt="Lunar Lander Example" width="400"/>
 
-**Documentation & Presentation**
+### Documentation & Presentation ###
 
 For a better experience, I encourage you to check out the following resources:
 - [Project Documentation PDF](media/Lunar_Lander.pdf)
-- [Watch Video Presentation](https://youtu.be/e_nDoMwvJ1A)
+- [Video Presentation](https://youtu.be/e_nDoMwvJ1A)
+
 ## Project Overview
 The Lunar Lander Project simulates a lunar landing mission with two control strategies: a PID controller and a Deep Q-Network (DQN) agent. The project includes a graphical user interface (GUI) for adjusting simulation parameters such as gravity, wind power, and fuel limits. The goal is to safely land the lunar lander using the selected control strategy.
 
@@ -79,16 +80,3 @@ To begin using the Lunar Lander simulation, first launch the graphical user inte
 4. **Start the Simulation**: Click the **Run** button to begin the simulation with the selected environment, controller, and parameters.
 
 5. **Close the Application**: Click the **Exit** button to terminate the application.
-
-## Code Structure
-- **`LunarLanderGUI.py`**: Implements the GUI using Tkinter for user interactions, allowing users to select controllers and adjust simulation parameters.
-- **`LunarLanderEnvWrapper.py`**: Wraps the Lunar Lander environment to integrate and manage adjustable parameters like gravity and wind.
-- **`DQNAgent.py`**: Contains the implementation of the Deep Q-Network (DQN) agent used to control the lunar lander and make decisions based on the environment state.
-- **`LunarLanderPIDController.py`**: Implements the Proportional-Integral-Derivative (PID) controller for managing the lunar lander’s descent.
-- **`DQN.py`**: Defines the architecture of the Deep Q-Network (DQN) using PyTorch, including fully connected layers and dropout for reinforcement learning tasks.
-- **`PIDController.py`**: Implements a basic PID controller to calculate control outputs based on setpoint and measurement, with methods for computing control actions.
-- **`ReplayBuffer.py`**: Provides a replay buffer for storing transitions and sampling mini-batches for training the DQN agent.
-- **`TrainDQN.py`**: Contains the training function for the DQN model, which allows you to train the agent in the Lunar Lander environment and save the trained model.
-- **`Plots.py`**: Contains functions for plotting the performance of different models (PID, DQN) and environments (Classic, Fuel, Wind, Gravity, and Malfunction).
-- **`requirements.txt`**: Lists the Python packages required to run the project.
-- **`README.md`**: Documentation file describing the project, installation, usage, and other relevant information.
